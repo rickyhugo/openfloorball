@@ -1,0 +1,20 @@
+---
+import Layout from "@/layouts/main.astro"
+import { StandingTable } from "@/components/standings-table"
+import { sslHerrar2024_25 } from "@/lib/fixtures/ssl-2024-25"
+
+const { competition, season, source, updatedLabel, rows } = sslHerrar2024_25
+---
+
+<Layout>
+  <main class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
+    <StandingTable
+      competition={competition}
+      season={season}
+      source={source}
+      updatedLabel={updatedLabel}
+      rows={rows}
+      client:visible
+    />
+  </main>
+</Layout>
