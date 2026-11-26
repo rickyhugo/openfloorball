@@ -4,8 +4,12 @@ import { listCompetitions, type CompetitionIndexRow } from "@/lib/db/queries"
 
 export const prerender = false
 
-const rows = await listCompetitions()
-const seasonLabel = rows[0]?.seasonLabel ?? ""
+const allRows = await listCompetitions()
+const seasonLabel = allRows.reduce(
+  (latest, row) => (row.seasonLabel > latest ? row.seasonLabel : latest),
+  ""
+)
+const rows = allRows.filter((row) => row.seasonLabel === seasonLabel)
 
 function categoryRank(name: string) {
   if (/^SSL/i.test(name)) return 0

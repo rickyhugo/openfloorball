@@ -32,6 +32,8 @@ async function open(page: Page) {
     timeout: 45000,
   })
   await page.waitForTimeout(4000)
+  await page.selectOption("#seasonId", SEASON)
+  await page.waitForTimeout(2000)
 }
 
 async function enumerate(page: Page): Promise<CompetitionRow[]> {
@@ -138,6 +140,10 @@ try {
     `${RAW}/competitions.json`,
     JSON.stringify(competitions, null, 2)
   )
+  if (process.env.IBIS_ENUMERATE_ONLY === "1") {
+    await browser.close()
+    process.exit(0)
+  }
 }
 
 const senior = competitions.filter(isSenior)

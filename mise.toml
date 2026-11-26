@@ -35,6 +35,9 @@ run = "doppler run -- tsx ingest/load.ts"
 [tasks."ingest:check"]
 run = "doppler run -- tsx ingest/check.ts"
 
+[tasks."ingest:backfill"]
+run = "bash ingest/backfill.sh"
+
 [tasks."ingest:verify"]
 run = "doppler run -- tsx ingest/verify.ts"
 

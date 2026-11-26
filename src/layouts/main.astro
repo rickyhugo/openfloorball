@@ -13,7 +13,14 @@ const {
   description = "Tabeller, resultat och statistik för svensk innebandy.",
 } = Astro.props
 
-const competitions = await listCompetitions()
+const allCompetitions = await listCompetitions()
+const latestSeason = allCompetitions.reduce(
+  (latest, row) => (row.seasonLabel > latest ? row.seasonLabel : latest),
+  ""
+)
+const competitions = allCompetitions.filter(
+  (row) => row.seasonLabel === latestSeason
+)
 const sslMen = competitions.find(
   (row) => row.name.includes("SSL") && row.name.includes("Herrar")
 )

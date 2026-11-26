@@ -4,17 +4,18 @@ import { neon } from "@neondatabase/serverless"
 const VIEW_SQL = `
 create materialized view if not exists search_document as
 with comp as (
-  select c.id, c.external_id, c.name, c.category_name
+  select c.id, c.external_id, c.name, c.category_name, s.label
   from competition c
+  join season s on s.competition_id = c.id
 ),
 team as (
-  select distinct on (cl.id, c.id)
-    cl.id::text || ':' || c.id::text as id, cl.name as title, c.name as subtitle, c.external_id, ts.external_id as team_ext
+  select distinct on (cl.id)
+    cl.id::text as id, cl.name as title, c.name || ' · ' || s.label as subtitle, c.external_id, ts.external_id as team_ext
   from team_season ts
   join club cl on cl.id = ts.club_id
   join season s on s.id = ts.season_id
   join competition c on c.id = s.competition_id
-  order by cl.id, c.id, ts.name
+  order by cl.id, s.label desc, c.name, ts.name
 ),
 gm as (
   select g.id, g.external_id, g.starts_at, g.status, g.home_score, g.away_score,
@@ -28,17 +29,17 @@ gm as (
   join competition c on c.id = s.competition_id
 ),
 pl as (
-  select distinct on (p.id) p.id, p.external_id, p.name, cl.name as club, c.name as comp, c.external_id as comp_ext
+  select distinct on (p.id) p.id, p.external_id, p.name, cl.name as club, c.name as comp, c.external_id as comp_ext, s.label as season
   from player p
   join player_competition_stat pcs on pcs.player_id = p.id
   join team_season ts on ts.id = pcs.team_season_id
   join club cl on cl.id = ts.club_id
   join season s on s.id = pcs.season_id
   join competition c on c.id = s.competition_id
-  order by p.id, pcs.matches desc
+  order by p.id, s.label desc, pcs.matches desc
 )
 select 'competition'::text as kind, comp.id::text as id, comp.name as title,
-       comp.category_name as subtitle, '/serie/' || comp.external_id as url,
+       comp.category_name || ' · ' || comp.label as subtitle, '/serie/' || comp.external_id as url,
        lower(unaccent(concat_ws(' ', comp.name, comp.category_name, 'serie tabell'))) as search_text,
        10 as weight
 from comp
@@ -55,8 +56,8 @@ select 'game', gm.id::text,
        lower(unaccent(concat_ws(' ', gm.home, gm.away, gm.comp, to_char(gm.starts_at at time zone 'Europe/Stockholm', 'YYYY-MM-DD')))), 6
 from gm
 union all
-select 'player', pl.id::text, pl.name, pl.club || ' · ' || pl.comp, '/spelare/' || pl.external_id,
-       lower(unaccent(concat_ws(' ', pl.name, pl.club, pl.comp))), 4
+select 'player', pl.id::text, pl.name, pl.club || ' · ' || pl.comp || ' · ' || pl.season, '/spelare/' || pl.external_id,
+       lower(unaccent(concat_ws(' ', pl.name, pl.club, pl.comp, pl.season))), 4
 from pl
 `
 
