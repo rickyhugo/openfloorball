@@ -1,0 +1,1 @@
+ALTER TABLE "competition" ADD COLUMN "region_name" text;

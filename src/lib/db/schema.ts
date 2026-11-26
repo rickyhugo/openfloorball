@@ -77,6 +77,7 @@ export const competition = pgTable(
     name: text("name").notNull(),
     categoryId: integer("category_id"),
     categoryName: text("category_name"),
+    regionName: text("region_name"),
     logoUrl: text("logo_url"),
     gender: gender("gender").notNull(),
     kind: competitionKind("kind").notNull(),

@@ -174,6 +174,15 @@ const competitionRows = JSON.parse(
 const seen = new Map<number, CompetitionRow>()
 for (const row of competitionRows) seen.set(row.CompetitionID, row)
 
+const federationNames = new Map<number, string>()
+const firstDir = `${RAW}/${[...seen.keys()][0]}`
+const federationRows = await readJson<
+  Array<{ FederationID: number; Name: string }>
+>(`${firstDir}/federations_.json`)
+for (const federation of federationRows ?? []) {
+  federationNames.set(federation.FederationID, federation.Name)
+}
+
 for (const row of [...seen.values()].filter(isSenior)) {
   const dir = `${RAW}/${row.CompetitionID}`
   const metadata = await readJson<{ SeasonName?: string }>(
@@ -205,6 +214,7 @@ for (const row of [...seen.values()].filter(isSenior)) {
       name: row.Name,
       categoryId: row.CategoryID,
       categoryName: row.CategoryName,
+      regionName: federationNames.get(row.FederationID) ?? null,
       logoUrl: row.LogotypeUrl,
       gender: genderOf(`${row.CategoryName} ${row.Name}`),
       kind: "league",

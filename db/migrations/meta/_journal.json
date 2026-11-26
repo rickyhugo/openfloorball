@@ -15,6 +15,13 @@
       "when": 1795711756637,
       "tag": "0001_low_newton_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795712549829,
+      "tag": "0002_aspiring_bloodscream",
+      "breakpoints": true
     }
   ]
 }

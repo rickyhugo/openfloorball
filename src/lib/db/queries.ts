@@ -20,6 +20,7 @@ export async function listCompetitions() {
       externalId: competition.externalId,
       name: competition.name,
       categoryName: competition.categoryName,
+      regionName: competition.regionName,
       gender: competition.gender,
       seasonLabel: season.label,
     })
