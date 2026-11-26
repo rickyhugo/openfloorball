@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises"
+import { readdir, readFile } from "node:fs/promises"
 import { sql } from "drizzle-orm"
 import { getDb } from "../src/lib/db/client"
 import {
@@ -175,7 +175,9 @@ const seen = new Map<number, CompetitionRow>()
 for (const row of competitionRows) seen.set(row.CompetitionID, row)
 
 const federationNames = new Map<number, string>()
-const firstDir = `${RAW}/${[...seen.keys()][0]}`
+const rawDirs = await readdir(RAW)
+const firstCollected = rawDirs.find((name) => /^\d+$/.test(name))
+const firstDir = `${RAW}/${firstCollected}`
 const federationRows = await readJson<
   Array<{ FederationID: number; Name: string }>
 >(`${firstDir}/federations_.json`)
@@ -214,7 +216,9 @@ for (const row of [...seen.values()].filter(isSenior)) {
       name: row.Name,
       categoryId: row.CategoryID,
       categoryName: row.CategoryName,
-      regionName: federationNames.get(row.FederationID) ?? null,
+      regionName: row.Name.includes("(SIBF)")
+        ? "Svenska IBF"
+        : (federationNames.get(row.FederationID) ?? null),
       logoUrl: row.LogotypeUrl,
       gender: genderOf(`${row.CategoryName} ${row.Name}`),
       kind: "league",
@@ -228,6 +232,7 @@ for (const row of [...seen.values()].filter(isSenior)) {
         name: sql`excluded.name`,
         categoryId: sql`excluded.category_id`,
         categoryName: sql`excluded.category_name`,
+        regionName: sql`excluded.region_name`,
         logoUrl: sql`excluded.logo_url`,
         gender: sql`excluded.gender`,
         kind: sql`excluded.kind`,
