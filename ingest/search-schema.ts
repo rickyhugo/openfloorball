@@ -7,15 +7,16 @@ with comp as (
   select c.id, c.external_id, c.name, c.category_name, s.label
   from competition c
   join season s on s.competition_id = c.id
+  where s.label = (select max(label) from season)
 ),
 team as (
-  select distinct on (cl.id)
-    cl.id::text as id, cl.name as title, c.name || ' · ' || s.label as subtitle, c.external_id, ts.external_id as team_ext
+  select
+    ts.id::text as id, ts.name as title, c.name || ' · ' || s.label as subtitle, c.external_id, ts.external_id as team_ext
   from team_season ts
   join club cl on cl.id = ts.club_id
   join season s on s.id = ts.season_id
   join competition c on c.id = s.competition_id
-  order by cl.id, s.label desc, c.name, ts.name
+  where s.label = (select max(label) from season)
 ),
 gm as (
   select g.id, g.external_id, g.starts_at, g.status, g.home_score, g.away_score,
@@ -27,6 +28,7 @@ gm as (
   join club ac on ac.id = at.club_id
   join season s on s.id = g.season_id
   join competition c on c.id = s.competition_id
+  where s.label = (select max(label) from season)
 ),
 pl as (
   select distinct on (p.id) p.id, p.external_id, p.name, cl.name as club, c.name as comp, c.external_id as comp_ext, s.label as season

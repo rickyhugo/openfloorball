@@ -140,9 +140,6 @@ export async function loadExternalLeague(league: ExternalLeague) {
 
   const teamSeasonIds = new Map<string, string>()
   for (const team of league.teams) {
-    // The same club can play in several competitions, so a season-team key must
-    // include the competition to avoid moving a team between seasons.
-    const teamSeasonExternalId = `${league.competition.externalId}:${team.externalId}`
     const [teamRow] = await db
       .insert(teamSeason)
       .values({
@@ -151,12 +148,11 @@ export async function loadExternalLeague(league: ExternalLeague) {
         name: team.name,
         shortName: team.shortName ?? null,
         source: league.source,
-        externalId: teamSeasonExternalId,
+        externalId: team.externalId,
       })
       .onConflictDoUpdate({
-        target: [teamSeason.source, teamSeason.externalId],
+        target: [teamSeason.seasonId, teamSeason.source, teamSeason.externalId],
         set: {
-          seasonId: seasonRow.id,
           clubId: clubIds.get(team.externalId)!,
           name: team.name,
           shortName: team.shortName ?? null,

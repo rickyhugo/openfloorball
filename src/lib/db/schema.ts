@@ -139,7 +139,8 @@ export const teamSeason = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex("team_season_source_external_idx").on(
+    uniqueIndex("team_season_season_source_external_idx").on(
+      table.seasonId,
       table.source,
       table.externalId
     ),

@@ -44,6 +44,7 @@ export async function getCompetition(externalId: string) {
       categoryName: competition.categoryName,
       gender: competition.gender,
       logoUrl: competition.logoUrl,
+      source: competition.source,
       seasonId: season.id,
       seasonLabel: season.label,
     })
@@ -55,6 +56,7 @@ export async function getCompetition(externalId: string) {
         eq(season.phase, "regular_season")
       )
     )
+    .orderBy(desc(season.label))
     .limit(1)
 
   if (!record) return null
@@ -187,6 +189,7 @@ export async function getTeam(
         eq(teamSeason.externalId, teamExternalId)
       )
     )
+    .orderBy(desc(season.label))
     .limit(1)
 
   if (!record) return null

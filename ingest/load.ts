@@ -209,10 +209,15 @@ for (const row of [...seen.values()].filter(isSenior)) {
   const metadata = await readJson<{ SeasonName?: string }>(
     `${dir}/competitions_${row.CompetitionID}.json`
   )
-  const teamStats =
+  const rawTeamStats =
     (await readJson<TeamStatRow[]>(
       `${dir}/competitions_${row.CompetitionID}_teamstatistics.json`
     )) ?? []
+  const teamStatsById = new Map<number, TeamStatRow>()
+  for (const stat of rawTeamStats) {
+    if (!teamStatsById.has(stat.TeamID)) teamStatsById.set(stat.TeamID, stat)
+  }
+  const teamStats = [...teamStatsById.values()]
   const matches =
     (await readJson<MatchRow[]>(
       `${dir}/competitions_${row.CompetitionID}_matches.json`
@@ -322,9 +327,8 @@ for (const row of [...seen.values()].filter(isSenior)) {
         }))
       )
       .onConflictDoUpdate({
-        target: [teamSeason.source, teamSeason.externalId],
+        target: [teamSeason.seasonId, teamSeason.source, teamSeason.externalId],
         set: {
-          seasonId: sql`excluded.season_id`,
           clubId: sql`excluded.club_id`,
           name: sql`excluded.name`,
           shortName: sql`excluded.short_name`,
