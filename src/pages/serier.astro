@@ -1,0 +1,226 @@
+---
+import Layout from "@/layouts/main.astro"
+import { listCompetitions, listCountries } from "@/lib/db/queries"
+
+export const prerender = false
+
+const rows = await listCompetitions()
+const seasonLabel = rows.reduce(
+  (latest, row) => (row.seasonLabel > latest ? row.seasonLabel : latest),
+  ""
+)
+const current = rows.filter((row) => row.seasonLabel === seasonLabel)
+const countries = await listCountries(seasonLabel)
+
+const params = Astro.url.searchParams
+const land = params.get("land") ?? ""
+const kon = params.get("kon") ?? ""
+const niva = params.get("niva") ?? ""
+
+function levelOf(name: string) {
+  if (/^SSL/i.test(name)) return { key: "ssl", label: "SSL", rank: 0 }
+  const division = name.match(/Div(?:ision)?\.?\s*([1-9])/i)
+  if (division) {
+    return {
+      key: `div${division[1]}`,
+      label: `Division ${division[1]}`,
+      rank: 10 + Number(division[1]),
+    }
+  }
+  if (/Allsvenskan/i.test(name))
+    return { key: "allsvenskan", label: "Allsvenskan", rank: 1 }
+  return { key: "ovrigt", label: "Övrigt", rank: 50 }
+}
+
+function href(next: { land?: string; kon?: string; niva?: string }) {
+  const query = new URLSearchParams()
+  const values = {
+    land: next.land ?? land,
+    kon: next.kon ?? kon,
+    niva: next.niva ?? niva,
+  }
+  for (const [key, value] of Object.entries(values)) {
+    if (value) query.set(key, value)
+  }
+  const search = query.toString()
+  return search ? `/serier?${search}` : "/serier"
+}
+
+const countryRows = countries.filter((row) => !land || row.id === land)
+const byCountry = current.filter((row) => !land || row.countryId === land)
+const byGender = byCountry.filter((row) => !kon || row.gender === kon)
+const filtered = byGender.filter(
+  (row) => !niva || levelOf(row.name).key === niva
+)
+
+const levels = new Map<
+  string,
+  { label: string; rank: number; items: typeof filtered }
+>()
+for (const row of byGender) {
+  const level = levelOf(row.name)
+  const group = levels.get(level.key) ?? {
+    label: level.label,
+    rank: level.rank,
+    items: [],
+  }
+  group.items.push(row)
+  levels.set(level.key, group)
+}
+const levelOrder = [...levels.entries()].sort((a, b) => a[1].rank - b[1].rank)
+
+const selectedCountry = countries.find((row) => row.id === land)
+const genders = [
+  { key: "", label: "Alla" },
+  { key: "men", label: "Herrar" },
+  { key: "women", label: "Damer" },
+  { key: "mixed", label: "Mixat" },
+].filter(
+  (gender) =>
+    gender.key !== "mixed" || byCountry.some((row) => row.gender === "mixed")
+)
+
+const groups = levelOrder
+  .filter(([key]) => !niva || key === niva)
+  .map(([, group]) => ({
+    ...group,
+    items: group.items.filter((row) => !niva || levelOf(row.name).key === niva),
+  }))
+---
+
+<Layout
+  title={`Alla serier ${seasonLabel}`}
+  description="Bläddra bland alla innebandyserier, herrar och damer."
+>
+  <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
+    <header class="border-b pb-6">
+      <p class="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+        Säsong {seasonLabel}
+      </p>
+      <h1 class="mt-2 font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
+        {selectedCountry ? selectedCountry.name : "Alla serier"}
+      </h1>
+      <p class="mt-2 text-sm text-muted-foreground">
+        {filtered.length} serier
+        {countryRows.length > 1 ? ` i ${countryRows.length} länder` : ""}
+      </p>
+    </header>
+
+    <section class="mt-6 space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="mr-1 text-xs tracking-wider text-muted-foreground uppercase">
+          Land
+        </span>
+        <a
+          href={href({ land: "", niva: "" })}
+          class:list={[
+            "rounded-full border px-3 py-1 text-xs transition-colors",
+            !land
+              ? "border-foreground bg-foreground text-background"
+              : "hover:bg-muted",
+          ]}
+        >
+          Alla
+        </a>
+        {countries.map((country) => (
+          <a
+            href={href({ land: country.id, niva: "" })}
+            class:list={[
+              "rounded-full border px-3 py-1 text-xs transition-colors",
+              land === country.id
+                ? "border-foreground bg-foreground text-background"
+                : "hover:bg-muted",
+            ]}
+          >
+            {country.name}
+            <span class="ml-1 opacity-60">{country.competitions}</span>
+          </a>
+        ))}
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="mr-1 text-xs tracking-wider text-muted-foreground uppercase">
+          Kön
+        </span>
+        {genders.map((gender) => (
+          <a
+            href={href({ kon: gender.key })}
+            class:list={[
+              "rounded-full border px-3 py-1 text-xs transition-colors",
+              kon === gender.key
+                ? "border-foreground bg-foreground text-background"
+                : "hover:bg-muted",
+            ]}
+          >
+            {gender.label}
+          </a>
+        ))}
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="mr-1 text-xs tracking-wider text-muted-foreground uppercase">
+          Nivå
+        </span>
+        <a
+          href={href({ niva: "" })}
+          class:list={[
+            "rounded-full border px-3 py-1 text-xs transition-colors",
+            !niva
+              ? "border-foreground bg-foreground text-background"
+              : "hover:bg-muted",
+          ]}
+        >
+          Alla
+        </a>
+        {levelOrder.map(([key, group]) => (
+          <a
+            href={href({ niva: key })}
+            class:list={[
+              "rounded-full border px-3 py-1 text-xs transition-colors",
+              niva === key
+                ? "border-foreground bg-foreground text-background"
+                : "hover:bg-muted",
+            ]}
+          >
+            {group.label}
+            <span class="ml-1 opacity-60">{group.items.length}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    {groups.length > 0 ? (
+      groups.map((group) => (
+        <section class="mt-10">
+          <div class="flex items-baseline justify-between gap-4 border-b pb-2">
+            <h2 class="font-heading text-2xl font-semibold">{group.label}</h2>
+            <span class="text-xs text-muted-foreground">
+              {group.items.length}
+            </span>
+          </div>
+          <ul class="mt-4 grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+            {group.items.map((item) => (
+              <li>
+                <a
+                  href={`/serie/${item.externalId}`}
+                  class="flex items-baseline justify-between gap-3 text-sm underline decoration-border underline-offset-4 hover:text-foreground hover:decoration-foreground"
+                >
+                  <span>{item.name}</span>
+                  {item.regionName && item.regionName !== "Svenska IBF" ? (
+                    <span class="shrink-0 text-xs text-muted-foreground">
+                      {item.regionName}
+                    </span>
+                  ) : null}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    ) : (
+      <p class="mt-10 text-sm text-muted-foreground">
+        Inga serier matchar filtret.
+      </p>
+    )}
+  </div>
+</Layout>

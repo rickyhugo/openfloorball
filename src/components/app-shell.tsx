@@ -3,6 +3,7 @@ import { SearchBox } from "@/components/search-box"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -22,9 +23,11 @@ export type NavGroup = {
 
 export function AppShell({
   nav,
+  seasonLabel,
   children,
 }: {
   nav: NavGroup[]
+  seasonLabel: string
   children: React.ReactNode
 }) {
   return (
@@ -38,6 +41,9 @@ export function AppShell({
             >
               OpenFloorball
             </a>
+            <p className="px-2 pb-1 text-xs text-muted-foreground">
+              Säsong {seasonLabel}
+            </p>
           </SidebarHeader>
           <SidebarContent>
             {nav.map((group) => (
@@ -55,6 +61,11 @@ export function AppShell({
               </SidebarGroup>
             ))}
           </SidebarContent>
+          <SidebarFooter>
+            <p className="px-2 py-1 text-[0.65rem] text-muted-foreground">
+              Data från iBIS
+            </p>
+          </SidebarFooter>
         </Sidebar>
         <SidebarInset>
           <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">

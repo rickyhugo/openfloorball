@@ -1,7 +1,7 @@
 ---
 import "@/styles/global.css"
 import { AppShell, type NavGroup } from "@/components/app-shell"
-import { listCompetitions } from "@/lib/db/queries"
+import { listCompetitions, listCountries } from "@/lib/db/queries"
 
 type Props = {
   title?: string
@@ -21,6 +21,7 @@ const latestSeason = allCompetitions.reduce(
 const competitions = allCompetitions.filter(
   (row) => row.seasonLabel === latestSeason
 )
+const countries = await listCountries(latestSeason)
 const sslMen = competitions.find(
   (row) => row.name.includes("SSL") && row.name.includes("Herrar")
 )
@@ -31,15 +32,25 @@ const allsMen = competitions.find((row) =>
   row.name.includes("Allsvenskan Herrar")
 )
 
+const countryGroups: NavGroup[] = countries.map((country) => ({
+  label: country.name,
+  items: [
+    { label: "Herrar", href: `/serier?land=${country.id}&kon=men` },
+    { label: "Damer", href: `/serier?land=${country.id}&kon=women` },
+    { label: "Alla serier", href: `/serier?land=${country.id}` },
+  ],
+}))
+
 const nav: NavGroup[] = [
   {
     label: "Översikt",
     items: [
-      { label: "Alla serier", href: "/" },
-      { label: "Herrar", href: "/#herrar" },
-      { label: "Damer", href: "/#damer" },
+      { label: "Start", href: "/" },
+      { label: "Alla serier", href: "/serier" },
+      { label: "Alla länder", href: "/serier" },
     ],
   },
+  ...countryGroups,
   {
     label: "Toppserier",
     items: [
@@ -52,7 +63,10 @@ const nav: NavGroup[] = [
       allsMen
         ? { label: "Allsvenskan Herrar", href: `/serie/${allsMen.externalId}` }
         : null,
-      { label: "Allsvenskan Damer", href: "/#damer" },
+      {
+        label: "Allsvenskan Damer",
+        href: "/serier?niva=allsvenskan&kon=women",
+      },
     ].filter((item): item is { label: string; href: string } => item !== null),
   },
 ]
@@ -68,7 +82,7 @@ const nav: NavGroup[] = [
     <meta name="theme-color" content="#ffffff" />
   </head>
   <body class="min-h-svh">
-    <AppShell client:load nav={nav}>
+    <AppShell client:load nav={nav} seasonLabel={latestSeason}>
       <slot />
     </AppShell>
   </body>

@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, or } from "drizzle-orm"
+import { and, asc, desc, eq, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { getDb } from "./client"
 import {
   club,
   competition,
+  country,
   game,
   goalieCompetitionStat,
   player,
@@ -23,9 +24,12 @@ export async function listCompetitions() {
       categoryName: competition.categoryName,
       regionName: competition.regionName,
       gender: competition.gender,
+      countryId: competition.countryId,
+      countryName: country.name,
       seasonLabel: season.label,
     })
     .from(competition)
+    .innerJoin(country, eq(country.id, competition.countryId))
     .innerJoin(season, eq(season.competitionId, competition.id))
     .where(eq(season.phase, "regular_season"))
     .orderBy(asc(competition.categoryName), asc(competition.name))
@@ -384,6 +388,24 @@ export async function getPlayer(externalId: string) {
     goalieTotals,
     savePercentage,
   }
+}
+
+export async function listCountries(label: string) {
+  const db = getDb()
+  return db
+    .select({
+      id: country.id,
+      name: country.name,
+      competitions: sql<number>`count(distinct ${competition.id})`.mapWith(
+        Number
+      ),
+    })
+    .from(country)
+    .innerJoin(competition, eq(competition.countryId, country.id))
+    .innerJoin(season, eq(season.competitionId, competition.id))
+    .where(eq(season.label, label))
+    .groupBy(country.id, country.name)
+    .orderBy(asc(country.name))
 }
 
 export type CompetitionIndexRow = Awaited<
