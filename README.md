@@ -55,6 +55,10 @@ mise run ingest:ch
 
 External league loaders share `ingest/external/load.ts`. They upsert country, competition, season, clubs, season teams, standings and games, then refresh the search index.
 
+## Live
+
+`/live` lists today's Swedish matches and `/live/{matchId}` follows one match. The page polls every five seconds and shows the score, period, last event time and the full event feed. Data comes directly from the public iBIS API, signed server-side; no extra credentials are needed.
+
 ## Status
 
-Live on the tailnet at `https://openfloorball.hugoplanet.se`. It has country-aware navigation, a competition directory, standings, results, fixtures, team pages, player pages for Sweden, and global search. Finland and Switzerland include current-season standings, results and fixtures; player statistics for those countries are not loaded yet.
+Live on the tailnet at `https://openfloorball.hugoplanet.se`. It has country-aware navigation, a competition directory, standings, results, fixtures, team pages, player pages for Sweden, global search, and live Swedish matches. Finland and Switzerland include current-season standings, results and fixtures; player statistics for those countries are not loaded yet.

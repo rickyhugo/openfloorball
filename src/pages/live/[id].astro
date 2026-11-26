@@ -1,0 +1,37 @@
+---
+import Layout from "@/layouts/main.astro"
+import { LiveMatch } from "@/components/live-match"
+import { getLiveMatch } from "@/lib/ibis-live"
+
+export const prerender = false
+
+const id = Number(Astro.params.id)
+if (!Number.isInteger(id) || id <= 0) return Astro.redirect("/live")
+
+const match = await getLiveMatch(id).catch((error) => {
+  console.error("live match page failed", id, error)
+  return null
+})
+if (!match) return Astro.redirect("/live")
+
+const title = `${match.home.name} - ${match.away.name}`
+---
+
+<Layout
+  title={`${title}, live`}
+  description={`Live-resultat och händelser: ${title}.`}
+>
+  <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
+    <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
+      <a
+        href="/live"
+        class="underline decoration-border underline-offset-4 hover:text-foreground"
+      >
+        Live
+      </a>
+      <span class="mx-2">/</span>
+      <span>{match.competition}</span>
+    </nav>
+    <LiveMatch initial={match} matchId={id} client:load />
+  </div>
+</Layout>
