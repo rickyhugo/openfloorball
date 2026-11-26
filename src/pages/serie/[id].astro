@@ -101,7 +101,10 @@ const title = `${data.name} ${data.seasonLabel}`
               </summary>
               <ul class="mt-3 space-y-2">
                 {games.map((game) => (
-                  <li class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 text-sm">
+                  <li
+                    id={`match-${game.externalId}`}
+                    class="grid scroll-mt-24 grid-cols-[1fr_auto_1fr] items-baseline gap-3 text-sm"
+                  >
                     <span class="truncate text-right">{game.homeName}</span>
                     <span class="font-semibold whitespace-nowrap tabular-nums">
                       {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
@@ -227,3 +230,15 @@ const title = `${data.name} ${data.seasonLabel}`
     ) : null}
   </main>
 </Layout>
+
+<script>
+  function revealHash() {
+    const target = document.getElementById(location.hash.slice(1))
+    if (!target) return
+    const details = target.closest("details")
+    if (details) details.open = true
+    target.scrollIntoView({ block: "center" })
+  }
+  revealHash()
+  window.addEventListener("hashchange", revealHash)
+</script>

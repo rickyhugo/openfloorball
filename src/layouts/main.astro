@@ -1,5 +1,6 @@
 ---
 import "@/styles/global.css"
+import Search from "@/components/search.astro"
 
 type Props = {
   title?: string
@@ -7,8 +8,8 @@ type Props = {
 }
 
 const {
-  title = "SSL Herrar 2024/25, tabell",
-  description = "Tabell för SSL Herrar 2024/25 med spelade matcher, målskillnad och poäng.",
+  title = "OpenFloorball, svensk innebandy",
+  description = "Tabeller, resultat och statistik för svensk innebandy.",
 } = Astro.props
 ---
 
@@ -21,7 +22,20 @@ const {
     <meta name="description" content={description} />
     <meta name="theme-color" content="#ffffff" />
   </head>
-  <body>
+  <body class="min-h-svh">
+    <header class="border-b border-border/70">
+      <div class="mx-auto flex w-full max-w-5xl items-center gap-4 px-4 py-3 sm:px-6">
+        <a
+          href="/"
+          class="font-heading text-lg font-semibold tracking-tight whitespace-nowrap"
+        >
+          OpenFloorball
+        </a>
+        <div class="ml-auto w-full max-w-sm">
+          <Search />
+        </div>
+      </div>
+    </header>
     <slot />
   </body>
 </html>

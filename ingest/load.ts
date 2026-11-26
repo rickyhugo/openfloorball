@@ -1,4 +1,5 @@
 import { readdir, readFile } from "node:fs/promises"
+import { ensureSearch, refreshSearch } from "./search-schema"
 import { sql } from "drizzle-orm"
 import { getDb } from "../src/lib/db/client"
 import {
@@ -635,6 +636,9 @@ for (const row of [...seen.values()].filter(isSenior)) {
     `${row.CompetitionID} ${row.Name}: ${teamStats.length} teams, ${gameRows.length} games, ${playerStatRows.length} players`
   )
 }
+
+await ensureSearch()
+await refreshSearch()
 
 console.log(`games ${gamesWritten}`)
 if (mismatches.length) {
