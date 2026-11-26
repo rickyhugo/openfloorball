@@ -5,6 +5,12 @@ hk = "2.14.0"
 [env]
 _.path = ["node_modules/.bin"]
 
+[tasks.dev]
+run = "doppler run -- npm run dev"
+
+[tasks.secrets]
+run = "doppler secrets --only-names"
+
 [tasks.lint]
 run = "npm run lint"
 
