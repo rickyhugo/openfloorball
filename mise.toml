@@ -35,6 +35,9 @@ run = "doppler run -- tsx ingest/load.ts"
 [tasks."ingest:check"]
 run = "doppler run -- tsx ingest/check.ts"
 
+[tasks."ingest:verify"]
+run = "doppler run -- tsx ingest/verify.ts"
+
 [tasks."db:studio"]
 run = "doppler run -- drizzle-kit studio"
 
