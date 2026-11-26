@@ -2,7 +2,6 @@
 import Layout from "@/layouts/main.astro"
 import { getLanding } from "@/lib/landing"
 import { listCountries } from "@/lib/db/queries"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -19,7 +18,6 @@ const data = await getLanding()
 if (!data) return Astro.redirect("/serier")
 
 const countries = await listCountries(data.seasonLabel)
-const number = new Intl.NumberFormat("sv-SE")
 const dateFormat = new Intl.DateTimeFormat("sv-SE", {
   day: "numeric",
   month: "short",
@@ -39,67 +37,19 @@ const featured = [sslMen, sslWomen].filter(
 
 <Layout
   title={`Innebandy ${data.seasonLabel}, tabeller och resultat`}
-  description="Tabeller, resultat och statistik från flera länder. Fler förbund läggs till efter hand."
+  description="Tabeller, resultat och statistik."
 >
-  <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
-    <header class="border-b pb-8">
-      <div class="flex flex-wrap items-center gap-2">
-        <Badge variant="outline">Säsong {data.seasonLabel}</Badge>
-        <Badge variant="secondary">{countries.length} länder live</Badge>
-      </div>
-      <h1 class="mt-4 font-heading text-5xl font-semibold tracking-tight sm:text-6xl">
-        Innebandy, samlat.
+  <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
+    <header class="border-b pb-6">
+      <h1 class="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
+        Innebandy
       </h1>
-      <p class="mt-3 max-w-2xl text-muted-foreground">
-        Tabeller, resultat och statistik från{" "}
-        {countries.map((entry) => entry.name).join(", ")}. Fler förbund läggs
-        till efter hand.
+      <p class="mt-2 text-sm text-muted-foreground">
+        Säsong {data.seasonLabel}
       </p>
-      <dl class="mt-6 flex flex-wrap gap-x-10 gap-y-3 text-sm">
-        <div>
-          <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-            Länder
-          </dt>
-          <dd class="font-heading text-2xl font-semibold tabular-nums">
-            {countries.length}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-            Serier
-          </dt>
-          <dd class="font-heading text-2xl font-semibold tabular-nums">
-            {number.format(data.counts.competitions)}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-            Lag
-          </dt>
-          <dd class="font-heading text-2xl font-semibold tabular-nums">
-            {number.format(data.counts.teams)}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-            Spelare
-          </dt>
-          <dd class="font-heading text-2xl font-semibold tabular-nums">
-            {number.format(data.counts.players)}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-            Matcher
-          </dt>
-          <dd class="font-heading text-2xl font-semibold tabular-nums">
-            {number.format(data.counts.games)}
-          </dd>
-        </div>
-      </dl>
     </header>
 
-    <section class="mt-10">
+    <section class="mt-8">
       <div class="flex items-baseline justify-between gap-4">
         <h2 class="font-heading text-2xl font-semibold">Länder</h2>
         <a
@@ -115,31 +65,17 @@ const featured = [sslMen, sslWomen].filter(
             href={`/serier?land=${country.id}`}
             class="rounded-xl border p-4 transition-colors hover:bg-muted"
           >
-            <p class="text-xs tracking-wider text-muted-foreground uppercase">
-              Land
-            </p>
-            <p class="mt-1 font-heading text-xl font-semibold">
-              {country.name}
-            </p>
+            <p class="font-heading text-xl font-semibold">{country.name}</p>
             <p class="mt-1 text-sm text-muted-foreground">
               {country.competitions} serier
             </p>
           </a>
         ))}
-        <div class="rounded-xl border border-dashed p-4">
-          <p class="text-xs tracking-wider text-muted-foreground uppercase">
-            Nästa
-          </p>
-          <p class="mt-1 font-heading text-xl font-semibold">Fler länder</p>
-          <p class="mt-1 text-sm text-muted-foreground">
-            Fler förbund läggs till efter hand.
-          </p>
-        </div>
       </div>
     </section>
 
-    <section class="mt-12">
-      <h2 class="font-heading text-2xl font-semibold">Utvalda serier</h2>
+    <section class="mt-10">
+      <h2 class="font-heading text-2xl font-semibold">Toppserier</h2>
       <div class="mt-4 grid gap-4 lg:grid-cols-2">
         {featured.map((entry) => (
           <Card>
@@ -148,7 +84,12 @@ const featured = [sslMen, sslWomen].filter(
                 <CardTitle className="font-heading text-xl">
                   {entry.label}
                 </CardTitle>
-                <Badge variant="secondary">{data.seasonLabel}</Badge>
+                <a
+                  href={`/serie/${entry.competition.externalId}`}
+                  class="text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
+                >
+                  Hela tabellen
+                </a>
               </div>
             </CardHeader>
             <CardContent>
@@ -168,7 +109,12 @@ const featured = [sslMen, sslWomen].filter(
                         {row.position}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {row.teamName}
+                        <a
+                          href={`/lag/${entry.competition.externalId}/${row.teamExternalId}`}
+                          class="hover:underline"
+                        >
+                          {row.teamName}
+                        </a>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {row.played}
@@ -180,19 +126,13 @@ const featured = [sslMen, sslWomen].filter(
                   ))}
                 </TableBody>
               </Table>
-              <a
-                href={`/serie/${entry.competition.externalId}`}
-                class="mt-4 inline-block text-xs underline decoration-border underline-offset-4 hover:text-foreground"
-              >
-                Hela tabellen
-              </a>
             </CardContent>
           </Card>
         ))}
       </div>
     </section>
 
-    <div class="mt-12 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+    <div class="mt-10 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
       <section>
         <h2 class="font-heading text-2xl font-semibold">Senaste resultat</h2>
         <Card className="mt-4">
@@ -260,41 +200,5 @@ const featured = [sslMen, sslWomen].filter(
         </Card>
       </section>
     </div>
-
-    <section class="mt-12">
-      <h2 class="font-heading text-2xl font-semibold">Utforska Sverige</h2>
-      <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            title: "SSL",
-            copy: "Svenska Superligan",
-            href: "/serier?niva=ssl",
-          },
-          {
-            title: "Allsvenskan",
-            copy: "Nästa nivå",
-            href: "/serier?niva=allsvenskan",
-          },
-          {
-            title: "Division 1",
-            copy: "Fyra regioner",
-            href: "/serier?niva=div1",
-          },
-          {
-            title: "Alla serier",
-            copy: "Alla nivåer och distrikt",
-            href: "/serier",
-          },
-        ].map((item) => (
-          <a
-            href={item.href}
-            class="rounded-xl border p-4 transition-colors hover:bg-muted"
-          >
-            <p class="font-heading text-xl font-semibold">{item.title}</p>
-            <p class="mt-1 text-sm text-muted-foreground">{item.copy}</p>
-          </a>
-        ))}
-      </div>
-    </section>
   </div>
 </Layout>

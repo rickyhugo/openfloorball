@@ -44,7 +44,6 @@ export type StandingTableProps = {
   season: string
   source: string
   updatedLabel: string
-  note?: string
   rows: Standing[]
 }
 
@@ -122,7 +121,6 @@ export function StandingTable({
   season,
   source,
   updatedLabel,
-  note,
   rows,
 }: StandingTableProps) {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
@@ -171,12 +169,7 @@ export function StandingTable({
         </p>
       </header>
 
-      <div className="flex items-center justify-between gap-3 sm:hidden">
-        <p className="text-xs text-muted-foreground">
-          {showAll
-            ? "Svep i tabellen för fler kolumner."
-            : "Färre kolumner på mobil."}
-        </p>
+      <div className="flex items-center justify-end gap-3 sm:hidden">
         <button
           type="button"
           onClick={() => setShowAll((value) => !value)}
@@ -350,19 +343,16 @@ export function StandingTable({
         </TableBody>
       </Table>
 
-      <footer className="space-y-1 text-xs text-muted-foreground">
-        <p>
-          Källa:{" "}
-          <a
-            href={`https://${source}`}
-            target="_blank"
-            rel="noreferrer"
-            className="underline decoration-border underline-offset-4 hover:text-foreground"
-          >
-            {source}
-          </a>
-        </p>
-        {note ? <p>{note}</p> : null}
+      <footer className="text-xs text-muted-foreground">
+        Källa:{" "}
+        <a
+          href={`https://${source}`}
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-border underline-offset-4 hover:text-foreground"
+        >
+          {source}
+        </a>
       </footer>
     </section>
   )

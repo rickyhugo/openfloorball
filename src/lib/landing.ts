@@ -24,6 +24,7 @@ export type LandingGame = {
 
 export type LandingStanding = {
   position: number
+  teamExternalId: string
   teamName: string
   played: number
   points: number
@@ -44,19 +45,6 @@ export async function getLanding() {
   `) as Array<{ label: string }>
   if (!season) return null
   const label = season.label
-
-  const [counts] = (await sql`
-    select
-      (select count(distinct c.id) from competition c join season s on s.competition_id = c.id where s.label = ${label})::int as competitions,
-      (select count(distinct ts.id) from team_season ts join season s on s.id = ts.season_id where s.label = ${label})::int as teams,
-      (select count(distinct pcs.player_id) from player_competition_stat pcs join season s on s.id = pcs.season_id where s.label = ${label})::int as players,
-      (select count(*) from game g join season s on s.id = g.season_id where s.label = ${label})::int as games
-  `) as Array<{
-    competitions: number
-    teams: number
-    players: number
-    games: number
-  }>
 
   const latestGames = (await sql`
     select g.external_id as "externalId", g.starts_at as "startsAt", g.home_score as "homeScore",
@@ -130,7 +118,7 @@ export async function getLanding() {
   }> = []
   for (const definition of definitions) {
     const standings = (await sql`
-      select tss.position, cl.name as "teamName", tss.played, tss.points
+      select tss.position, ts.external_id as "teamExternalId", cl.name as "teamName", tss.played, tss.points
       from team_season_stat tss
       join season s on s.id = tss.season_id
       join competition c on c.id = s.competition_id
@@ -160,5 +148,5 @@ export async function getLanding() {
       `) as Array<LandingLeader>)
     : []
 
-  return { seasonLabel: label, counts, latestGames, featured, leaders }
+  return { seasonLabel: label, latestGames, featured, leaders }
 }

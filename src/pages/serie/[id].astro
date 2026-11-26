@@ -60,6 +60,12 @@ const orderedRounds = [...rounds.entries()].sort(
 )
 
 const title = `${data.name} ${data.seasonLabel}`
+const sourceUrl =
+  data.source === "fliiga"
+    ? "fliiga.com"
+    : data.source === "swissunihockey"
+      ? "myapp.swissunihockey.ch"
+      : "stats.innebandy.se"
 ---
 
 <Layout
@@ -69,7 +75,7 @@ const title = `${data.name} ${data.seasonLabel}`
   <div class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
     <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
       <a
-        href="/"
+        href="/serier"
         class="underline decoration-border underline-offset-4 hover:text-foreground"
       >
         Alla serier
@@ -81,9 +87,8 @@ const title = `${data.name} ${data.seasonLabel}`
     <StandingTable
       competition={data.name}
       season={data.seasonLabel}
-      source="stats.innebandy.se"
+      source={sourceUrl}
       updatedLabel={`${standingRows.length} lag`}
-      note="Tabellen uppdateras när nya matcher rapporteras."
       rows={standingRows}
       client:visible
     />

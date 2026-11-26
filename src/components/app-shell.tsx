@@ -3,7 +3,6 @@ import { SearchBox } from "@/components/search-box"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -61,11 +60,6 @@ export function AppShell({
               </SidebarGroup>
             ))}
           </SidebarContent>
-          <SidebarFooter>
-            <p className="px-2 py-1 text-[0.65rem] text-muted-foreground">
-              Data från iBIS
-            </p>
-          </SidebarFooter>
         </Sidebar>
         <SidebarInset>
           <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">

@@ -9,8 +9,8 @@ type Props = {
 }
 
 const {
-  title = "OpenFloorball, svensk innebandy",
-  description = "Tabeller, resultat och statistik för svensk innebandy.",
+  title = "OpenFloorball",
+  description = "Tabeller, resultat och statistik.",
 } = Astro.props
 
 const allCompetitions = await listCompetitions()
@@ -31,6 +31,9 @@ const sslWomen = competitions.find(
 const allsMen = competitions.find((row) =>
   row.name.includes("Allsvenskan Herrar")
 )
+const allsWomen = competitions.find((row) =>
+  row.name.includes("Allsvenskan Damer")
+)
 
 const countryGroups: NavGroup[] = countries.map((country) => ({
   label: country.name,
@@ -47,7 +50,6 @@ const nav: NavGroup[] = [
     items: [
       { label: "Start", href: "/" },
       { label: "Alla serier", href: "/serier" },
-      { label: "Alla länder", href: "/serier" },
     ],
   },
   ...countryGroups,
@@ -63,10 +65,12 @@ const nav: NavGroup[] = [
       allsMen
         ? { label: "Allsvenskan Herrar", href: `/serie/${allsMen.externalId}` }
         : null,
-      {
-        label: "Allsvenskan Damer",
-        href: "/serier?niva=allsvenskan&kon=women",
-      },
+      allsWomen
+        ? {
+            label: "Allsvenskan Damer",
+            href: `/serie/${allsWomen.externalId}`,
+          }
+        : null,
     ].filter((item): item is { label: string; href: string } => item !== null),
   },
 ]

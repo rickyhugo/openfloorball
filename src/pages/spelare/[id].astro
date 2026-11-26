@@ -67,7 +67,7 @@ const maxPoints = Math.max(...seasonBars.map(([, points]) => points), 1)
   <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
     <nav class="mb-5 text-xs tracking-wider text-muted-foreground uppercase">
       <a
-        href="/"
+        href="/serier"
         class="underline decoration-border underline-offset-4 hover:text-foreground"
       >
         Alla serier
@@ -104,22 +104,14 @@ const maxPoints = Math.max(...seasonBars.map(([, points]) => points), 1)
           </div>
         )}
         <div class="min-w-0">
-          <div class="flex flex-wrap items-center gap-2">
+          {latest ? (
             <Badge
               variant="outline"
-              className="border-background/20 bg-background/10 text-background"
+              className="border-background/20 text-background/80"
             >
-              Spelare
+              {latest.seasonLabel}
             </Badge>
-            {latest ? (
-              <Badge
-                variant="outline"
-                className="border-background/20 text-background/80"
-              >
-                {latest.seasonLabel}
-              </Badge>
-            ) : null}
-          </div>
+          ) : null}
           <h1 class="mt-3 font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
             {person.name}
           </h1>
@@ -386,10 +378,6 @@ const maxPoints = Math.max(...seasonBars.map(([, points]) => points), 1)
       <p class="mt-10 text-sm text-muted-foreground">
         Ingen statistik registrerad ännu.
       </p>
-    ) : (
-      <p class="mt-8 text-xs text-muted-foreground">
-        Karriären omfattar de säsonger som är inlästa.
-      </p>
-    )}
+    ) : null}
   </div>
 </Layout>
