@@ -1,20 +1,96 @@
 ---
 import Layout from "@/layouts/main.astro"
-import { StandingTable } from "@/components/standings-table"
-import { sslHerrar2024_25 } from "@/lib/fixtures/ssl-2024-25"
+import { listCompetitions, type CompetitionIndexRow } from "@/lib/db/queries"
 
-const { competition, season, source, updatedLabel, rows } = sslHerrar2024_25
+export const prerender = false
+
+const rows = await listCompetitions()
+const seasonLabel = rows[0]?.seasonLabel ?? ""
+
+function categoryRank(name: string) {
+  if (/^SSL/i.test(name)) return 0
+  if (/Allsvenskan/i.test(name)) return 1
+  const division = name.match(/Division\s+([1-5])/i)
+  if (division) return 10 + Number(division[1])
+  return 50
+}
+
+function groupByCategory(items: CompetitionIndexRow[]) {
+  const groups = new Map<string, CompetitionIndexRow[]>()
+  for (const item of items) {
+    const key = item.categoryName ?? "Övrigt"
+    groups.set(key, [...(groups.get(key) ?? []), item])
+  }
+  return [...groups.entries()].sort(
+    (a, b) =>
+      categoryRank(a[0]) - categoryRank(b[0]) || a[0].localeCompare(b[0], "sv")
+  )
+}
+
+const sections = [
+  {
+    key: "men",
+    label: "Herrar",
+    items: rows.filter((row) => row.gender === "men"),
+  },
+  {
+    key: "women",
+    label: "Damer",
+    items: rows.filter((row) => row.gender === "women"),
+  },
+  {
+    key: "mixed",
+    label: "Mixat",
+    items: rows.filter((row) => row.gender === "mixed"),
+  },
+].filter((section) => section.items.length > 0)
 ---
 
-<Layout>
-  <main class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
-    <StandingTable
-      competition={competition}
-      season={season}
-      source={source}
-      updatedLabel={updatedLabel}
-      rows={rows}
-      client:visible
-    />
+<Layout
+  title={`Svensk innebandy ${seasonLabel}, tabeller och resultat`}
+  description={`Tabeller, resultat och skytteliga för ${rows.length} svenska seniortävlingar, herrar och damer.`}
+>
+  <main class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
+    <header class="border-b pb-8">
+      <p class="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+        Säsong {seasonLabel}
+      </p>
+      <h1 class="mt-2 font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
+        Svensk innebandy
+      </h1>
+      <p class="mt-3 max-w-2xl text-muted-foreground">
+        Tabeller, resultat och skytteliga för {rows.length} serier, herrar och
+        damer.
+      </p>
+    </header>
+
+    {sections.map((section) => (
+      <section class="mt-12">
+        <h2 class="font-heading text-2xl font-semibold">{section.label}</h2>
+        <div class="mt-5 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+          {groupByCategory(section.items).map(([category, items]) => (
+            <div>
+              {items.length === 1 && items[0].name === category ? null : (
+                <h3 class="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+                  {category}
+                </h3>
+              )}
+              <ul class="mt-2 space-y-1.5">
+                {items.map((item) => (
+                  <li>
+                    <a
+                      href={`/serie/${item.externalId}`}
+                      class="text-sm leading-6 underline decoration-border underline-offset-4 hover:text-foreground hover:decoration-foreground"
+                    >
+                      {item.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
   </main>
 </Layout>
