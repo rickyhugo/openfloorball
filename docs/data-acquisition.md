@@ -12,13 +12,14 @@ The gate is a Neon project in `aws-eu-central-1`, with its pooled connection str
 
 I measured these today, or read them from the source's own documentation.
 
-| Source                                                   | Access                                    | Shape                                                                                                                                     |
-| -------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Sweden, `stats.innebandy.se`                             | SPA over `api.innebandy.se/v2/api/public` | Bearer token from `auth/startkit`, then a per-request signature in `x-nonce`, `x-signature` and `x-timestamp`. Not an open API.           |
-| Sweden, iBIS API v2                                      | Login, per-club agreement, top two tiers  | Documented REST. One retrieval per day, 00:00 to 06:00, per the federation.                                                               |
-| IFF, `app.floorball.sport`                               | Public LeagueOrganizer feed               | Schedule and results are public. Game events need an access and refresh token.                                                            |
-| Finland, Switzerland, Czechia, Germany, Latvia, Slovakia | One adapter each in the reference project | Czechia blocks datacenter IPs. Germany now requires a Saisonmanager API key.                                                              |
-| Sportradar, SportsAPI                                    | Commercial                                | Fixtures, results, standings, limited events. SportsAPI advertises 15 competitions, seasons back to 2008, and 1000 requests per day free. |
+| Source                                                   | Access                                    | Shape                                                                                                                                                                                                          |
+| -------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sweden, `stats.innebandy.se`                             | SPA over `api.innebandy.se/v2/api/public` | Bearer token from `auth/startkit`, then a per-request signature in `x-nonce`, `x-signature` and `x-timestamp`. Not an open API.                                                                                |
+| Sweden, iBIS API v2                                      | Login, per-club agreement, top two tiers  | Documented REST. One retrieval per day, 00:00 to 06:00, per the federation.                                                                                                                                    |
+| Sweden, `www.ssl.se`                                     | League site, no authentication            | `GET /api/gameday/gameheader` returns fixtures and results as JSON, measured at 12.6 KB for one day. Standings arrive embedded in the server HTML of `/tabell`. Covers the top men's and women's leagues only. |
+| IFF, `app.floorball.sport`                               | Public LeagueOrganizer feed               | Schedule and results are public. Game events need an access and refresh token.                                                                                                                                 |
+| Finland, Switzerland, Czechia, Germany, Latvia, Slovakia | One adapter each in the reference project | Czechia blocks datacenter IPs. Germany now requires a Saisonmanager API key.                                                                                                                                   |
+| Sportradar, SportsAPI                                    | Commercial                                | Fixtures, results, standings, limited events. SportsAPI advertises 15 competitions, seasons back to 2008, and 1000 requests per day free.                                                                      |
 
 The hard part is access, not parsing.
 
@@ -33,7 +34,9 @@ Options for Sweden, in order of preference.
 3. A commercial feed that carries SSL results and standings.
 4. Low-volume collection of public pages, with the terms reviewed first.
 
-Default until one of those lands: use a commercial feed for fixtures, results and standings across countries, and add federation adapters for depth where access is granted.
+The league's own site is a separate source. `www.ssl.se` serves its fixtures and results from an unauthenticated same-origin JSON endpoint, and embeds the standings in the page. That covers the top men's and women's leagues, which is the right first target. It does not cover the rest of Swedish floorball.
+
+Default until an agreement lands: build the first adapter against the league site for the top league, then the IFF championships, and revisit the federation when access is settled.
 
 ## Source ladder
 
@@ -59,11 +62,12 @@ Before an adapter is written, spend ten minutes with `curl` and the network pane
 
 ## Order of work
 
-1. Schema, adapter interface, and one adapter against recorded fixtures.
-2. The IFF World Championships. Small dataset, public feed, high value, and a different shape from a league.
-3. One national league with server HTML or an open endpoint, to prove the registry.
-4. Sweden once access is settled.
-5. History backfill, nightly scheduling, freshness monitoring.
+1. Schema, adapter interface, and the SSL adapter against recorded fixtures.
+2. The SSL league site itself, for standings, fixtures and results, men and women.
+3. The IFF World Championships, a different shape from a league.
+4. One more national league, to prove the registry.
+5. The rest of Sweden once access is settled.
+6. History backfill, nightly scheduling, freshness monitoring.
 
 ## Not now
 
