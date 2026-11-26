@@ -1,0 +1,26 @@
+amends "package://github.com/jdx/hk/releases/download/v2.14.0/hk@2.14.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.14.0/hk@2.14.0#/Builtins.pkl"
+
+local linters = new Mapping {
+  ["astro"] = Builtins.astro
+  ["eslint"] = Builtins.eslint
+  ["prettier"] = Builtins.prettier
+  ["tsc"] = Builtins.tsc
+}
+
+steps = linters
+
+hooks {
+  ["pre-push"] {
+    steps {
+      ["build"] {
+        check = "mise run build"
+      }
+    }
+  }
+  ["commit-msg"] {
+    steps {
+      ["conventional-commit"] = Builtins.check_conventional_commit
+    }
+  }
+}
