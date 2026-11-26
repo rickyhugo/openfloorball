@@ -28,7 +28,7 @@ gm as (
   join competition c on c.id = s.competition_id
 ),
 pl as (
-  select distinct on (p.id) p.id, p.name, cl.name as club, c.name as comp, c.external_id as comp_ext
+  select distinct on (p.id) p.id, p.external_id, p.name, cl.name as club, c.name as comp, c.external_id as comp_ext
   from player p
   join player_competition_stat pcs on pcs.player_id = p.id
   join team_season ts on ts.id = pcs.team_season_id
@@ -55,7 +55,7 @@ select 'game', gm.id::text,
        lower(unaccent(concat_ws(' ', gm.home, gm.away, gm.comp, to_char(gm.starts_at at time zone 'Europe/Stockholm', 'YYYY-MM-DD')))), 6
 from gm
 union all
-select 'player', pl.id::text, pl.name, pl.club || ' · ' || pl.comp, '/serie/' || pl.comp_ext,
+select 'player', pl.id::text, pl.name, pl.club || ' · ' || pl.comp, '/spelare/' || pl.external_id,
        lower(unaccent(concat_ws(' ', pl.name, pl.club, pl.comp))), 4
 from pl
 `

@@ -126,7 +126,14 @@ const goalDifference = standing ? standing.goalsFor - standing.goalsAgainst : 0
             <tbody>
               {skaters.map((entry) => (
                 <tr class="border-b border-border/60">
-                  <td class="py-2 pr-3">{entry.playerName}</td>
+                  <td class="py-2 pr-3">
+                    <a
+                      href={`/spelare/${entry.playerExternalId}`}
+                      class="hover:underline"
+                    >
+                      {entry.playerName}
+                    </a>
+                  </td>
                   <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
                     {entry.matches ?? "-"}
                   </td>
@@ -175,7 +182,14 @@ const goalDifference = standing ? standing.goalsFor - standing.goalsAgainst : 0
             <tbody>
               {goalies.map((entry) => (
                 <tr class="border-b border-border/60">
-                  <td class="py-2 pr-3">{entry.playerName}</td>
+                  <td class="py-2 pr-3">
+                    <a
+                      href={`/spelare/${entry.playerExternalId}`}
+                      class="hover:underline"
+                    >
+                      {entry.playerName}
+                    </a>
+                  </td>
                   <td class="py-2 pl-3 text-right tabular-nums">
                     {entry.goalieMatches ?? "-"}
                   </td>

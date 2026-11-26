@@ -106,6 +106,7 @@ export async function getCompetition(externalId: string) {
   const leaders = await db
     .select({
       playerName: player.name,
+      playerExternalId: player.externalId,
       clubName: club.name,
       matches: playerCompetitionStat.matches,
       goals: playerCompetitionStat.goals,
@@ -131,6 +132,7 @@ export async function getCompetition(externalId: string) {
   const goalies = await db
     .select({
       playerName: player.name,
+      playerExternalId: player.externalId,
       clubName: club.name,
       matches: goalieCompetitionStat.matches,
       shotsAgainst: goalieCompetitionStat.shotsAgainst,
@@ -213,6 +215,7 @@ export async function getTeam(
   const roster = await db
     .select({
       playerName: player.name,
+      playerExternalId: player.externalId,
       imageUrl: player.imageUrl,
       matches: playerCompetitionStat.matches,
       goals: playerCompetitionStat.goals,
@@ -288,6 +291,101 @@ export async function getTeam(
   return { ...record, standing: standing ?? null, roster, games }
 }
 
+export async function getPlayer(externalId: string) {
+  const db = getDb()
+  const [person] = await db
+    .select({
+      id: player.id,
+      externalId: player.externalId,
+      name: player.name,
+      imageUrl: player.imageUrl,
+    })
+    .from(player)
+    .where(eq(player.externalId, externalId))
+    .limit(1)
+
+  if (!person) return null
+
+  const rows = await db
+    .select({
+      competitionName: competition.name,
+      competitionExternalId: competition.externalId,
+      seasonLabel: season.label,
+      clubName: club.name,
+      teamExternalId: teamSeason.externalId,
+      teamName: teamSeason.name,
+      matches: playerCompetitionStat.matches,
+      goals: playerCompetitionStat.goals,
+      assists: playerCompetitionStat.assists,
+      points: playerCompetitionStat.points,
+      penaltyMinutes: playerCompetitionStat.penaltyMinutes,
+      goalieMatches: goalieCompetitionStat.matches,
+      shotsAgainst: goalieCompetitionStat.shotsAgainst,
+      goalsAgainst: goalieCompetitionStat.goalsAgainst,
+      savePercentage: goalieCompetitionStat.savePercentage,
+    })
+    .from(player)
+    .innerJoin(rosterEntry, eq(rosterEntry.playerId, player.id))
+    .innerJoin(teamSeason, eq(teamSeason.id, rosterEntry.teamSeasonId))
+    .innerJoin(club, eq(club.id, teamSeason.clubId))
+    .innerJoin(season, eq(season.id, rosterEntry.seasonId))
+    .innerJoin(competition, eq(competition.id, season.competitionId))
+    .leftJoin(
+      playerCompetitionStat,
+      and(
+        eq(playerCompetitionStat.playerId, player.id),
+        eq(playerCompetitionStat.seasonId, rosterEntry.seasonId),
+        eq(playerCompetitionStat.teamSeasonId, rosterEntry.teamSeasonId)
+      )
+    )
+    .leftJoin(
+      goalieCompetitionStat,
+      and(
+        eq(goalieCompetitionStat.playerId, player.id),
+        eq(goalieCompetitionStat.seasonId, rosterEntry.seasonId),
+        eq(goalieCompetitionStat.teamSeasonId, rosterEntry.teamSeasonId)
+      )
+    )
+    .where(eq(player.id, person.id))
+    .orderBy(desc(season.label), asc(competition.name))
+
+  const skaterRows = rows.filter((row) => row.matches !== null)
+  const goalieRows = rows.filter((row) => row.goalieMatches !== null)
+  const skaterTotals = skaterRows.reduce(
+    (totals, row) => ({
+      matches: totals.matches + (row.matches ?? 0),
+      goals: totals.goals + (row.goals ?? 0),
+      assists: totals.assists + (row.assists ?? 0),
+      points: totals.points + (row.points ?? 0),
+      penaltyMinutes: totals.penaltyMinutes + (row.penaltyMinutes ?? 0),
+    }),
+    { matches: 0, goals: 0, assists: 0, points: 0, penaltyMinutes: 0 }
+  )
+  const goalieTotals = goalieRows.reduce(
+    (totals, row) => ({
+      matches: totals.matches + (row.goalieMatches ?? 0),
+      shotsAgainst: totals.shotsAgainst + (row.shotsAgainst ?? 0),
+      goalsAgainst: totals.goalsAgainst + (row.goalsAgainst ?? 0),
+    }),
+    { matches: 0, shotsAgainst: 0, goalsAgainst: 0 }
+  )
+  const savePercentage = goalieTotals.shotsAgainst
+    ? ((goalieTotals.shotsAgainst - goalieTotals.goalsAgainst) /
+        goalieTotals.shotsAgainst) *
+      100
+    : null
+
+  return {
+    person,
+    rows,
+    skaterRows,
+    goalieRows,
+    skaterTotals,
+    goalieTotals,
+    savePercentage,
+  }
+}
+
 export type CompetitionIndexRow = Awaited<
   ReturnType<typeof listCompetitions>
 >[number]
@@ -295,3 +393,4 @@ export type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetition>>
 >
 export type TeamDetail = NonNullable<Awaited<ReturnType<typeof getTeam>>>
+export type PlayerDetail = NonNullable<Awaited<ReturnType<typeof getPlayer>>>
