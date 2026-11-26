@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless"
 
+// Run ingest/search-rebuild.ts after changing VIEW_SQL. ensure creates the view only when it is missing.
 const VIEW_SQL = `
 create materialized view if not exists search_document as
 with comp as (
@@ -7,13 +8,13 @@ with comp as (
   from competition c
 ),
 team as (
-  select distinct on (cl.id)
-    cl.id, cl.name as title, c.name as subtitle, c.external_id
+  select distinct on (cl.id, c.id)
+    cl.id::text || ':' || c.id::text as id, cl.name as title, c.name as subtitle, c.external_id
   from team_season ts
   join club cl on cl.id = ts.club_id
   join season s on s.id = ts.season_id
   join competition c on c.id = s.competition_id
-  order by cl.id, c.name, ts.name
+  order by cl.id, c.id, ts.name
 ),
 gm as (
   select g.id, g.external_id, g.starts_at, g.status, g.home_score, g.away_score,
@@ -42,7 +43,7 @@ select 'competition'::text as kind, comp.id::text as id, comp.name as title,
        10 as weight
 from comp
 union all
-select 'team', team.id::text, team.title, team.subtitle, '/serie/' || team.external_id,
+select 'team', team.id, team.title, team.subtitle, '/serie/' || team.external_id,
        lower(unaccent(concat_ws(' ', team.title, team.subtitle, 'lag'))), 9
 from team
 union all
@@ -82,4 +83,12 @@ export async function ensureSearch() {
 export async function refreshSearch() {
   const sql = searchClient()
   await sql.query("refresh materialized view concurrently search_document")
+}
+
+export async function rebuildSearch() {
+  const sql = searchClient()
+  await sql.query("drop materialized view if exists search_document")
+  for (const statement of STATEMENTS) {
+    await sql.query(statement)
+  }
 }
