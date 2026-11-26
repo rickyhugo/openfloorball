@@ -30,7 +30,12 @@ const title = `${match.home.name} - ${match.away.name}`
         Live
       </a>
       <span class="mx-2">/</span>
-      <span>{match.competition}</span>
+      <a
+        href={`/serie/${match.competitionId}`}
+        class="underline decoration-border underline-offset-4 hover:text-foreground"
+      >
+        {match.competition}
+      </a>
     </nav>
     <LiveMatch initial={match} matchId={id} client:load />
   </div>
