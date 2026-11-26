@@ -59,6 +59,11 @@ async function enumerate(page: Page): Promise<CompetitionRow[]> {
       await page.selectOption("#federationId", federationId)
       const response = await responsePromise
       const body = (await response.json()) as CompetitionRow[]
+      await mkdir(`${RAW}/federations`, { recursive: true })
+      await writeFile(
+        `${RAW}/federations/${federationId}.json`,
+        JSON.stringify(body)
+      )
       for (const row of body)
         rows.set(row.CompetitionID, {
           ...row,

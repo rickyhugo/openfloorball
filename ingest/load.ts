@@ -175,14 +175,32 @@ const seen = new Map<number, CompetitionRow>()
 for (const row of competitionRows) seen.set(row.CompetitionID, row)
 
 const federationNames = new Map<number, string>()
+const federationLists = new Map<number, Set<number>>()
+const federationDir = `${RAW}/federations`
+for (const file of await readdir(federationDir)) {
+  const federationId = Number(file.replace(".json", ""))
+  const rows = await readJson<CompetitionRow[]>(`${federationDir}/${file}`)
+  for (const row of rows ?? []) {
+    const set = federationLists.get(row.CompetitionID) ?? new Set<number>()
+    set.add(federationId)
+    federationLists.set(row.CompetitionID, set)
+  }
+}
+
 const rawDirs = await readdir(RAW)
 const firstCollected = rawDirs.find((name) => /^\d+$/.test(name))
-const firstDir = `${RAW}/${firstCollected}`
 const federationRows = await readJson<
   Array<{ FederationID: number; Name: string }>
->(`${firstDir}/federations_.json`)
+>(`${RAW}/${firstCollected}/federations_.json`)
 for (const federation of federationRows ?? []) {
   federationNames.set(federation.FederationID, federation.Name)
+}
+
+function regionFor(row: CompetitionRow): string | null {
+  if (row.Name.includes("(SIBF)")) return "Svenska IBF"
+  const federations = federationLists.get(row.CompetitionID)
+  if (!federations || federations.size !== 1) return null
+  return federationNames.get([...federations][0]) ?? null
 }
 
 for (const row of [...seen.values()].filter(isSenior)) {
@@ -216,9 +234,7 @@ for (const row of [...seen.values()].filter(isSenior)) {
       name: row.Name,
       categoryId: row.CategoryID,
       categoryName: row.CategoryName,
-      regionName: row.Name.includes("(SIBF)")
-        ? "Svenska IBF"
-        : (federationNames.get(row.FederationID) ?? null),
+      regionName: regionFor(row),
       logoUrl: row.LogotypeUrl,
       gender: genderOf(`${row.CategoryName} ${row.Name}`),
       kind: "league",
