@@ -83,7 +83,7 @@ function SortableHead({
         title={description}
         aria-label={`Sortera efter ${description.toLowerCase()}`}
         className={cn(
-          "ml-auto flex items-center justify-end gap-1 rounded-sm text-xs font-medium tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+          "ml-auto flex items-center justify-end gap-1 rounded-sm transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
           active && "text-foreground"
         )}
       >
@@ -105,10 +105,7 @@ type StaticHeadProps = {
 function StaticHead({ label, description, className }: StaticHeadProps) {
   return (
     <TableHead className={cn("text-right", className)}>
-      <abbr
-        title={description}
-        className="text-xs font-medium tracking-wider text-muted-foreground uppercase no-underline"
-      >
+      <abbr title={description} className="no-underline">
         {label}
       </abbr>
     </TableHead>
@@ -160,7 +157,7 @@ export function StandingTable({
           <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
             Tabell
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
             {competition}{" "}
             <span className="font-normal text-muted-foreground">{season}</span>
           </h1>
