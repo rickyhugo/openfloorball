@@ -1,6 +1,18 @@
 ---
 import Layout from "@/layouts/main.astro"
 import { getPlayer } from "@/lib/db/queries"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 export const prerender = false
 
@@ -26,14 +38,34 @@ const initials = person.name
   .slice(0, 2)
   .map((part) => part[0]?.toUpperCase())
   .join("")
+
+const skaterStats = [
+  { label: "Matcher", value: skaterTotals.matches },
+  { label: "Mål", value: skaterTotals.goals },
+  { label: "Assists", value: skaterTotals.assists },
+  { label: "Poäng", value: skaterTotals.points, highlight: true },
+  { label: "Utvisning", value: skaterTotals.penaltyMinutes },
+]
+
+const seasonPoints = new Map<string, number>()
+for (const row of skaterRows) {
+  seasonPoints.set(
+    row.seasonLabel,
+    (seasonPoints.get(row.seasonLabel) ?? 0) + (row.points ?? 0)
+  )
+}
+const seasonBars = [...seasonPoints.entries()].sort((a, b) =>
+  a[0].localeCompare(b[0])
+)
+const maxPoints = Math.max(...seasonBars.map(([, points]) => points), 1)
 ---
 
 <Layout
   title={`${person.name}, statistik och karriär`}
   description={`Statistik och karriär för ${person.name}.`}
 >
-  <div class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
-    <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
+  <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
+    <nav class="mb-5 text-xs tracking-wider text-muted-foreground uppercase">
       <a
         href="/"
         class="underline decoration-border underline-offset-4 hover:text-foreground"
@@ -53,267 +85,309 @@ const initials = person.name
       ) : null}
     </nav>
 
-    <header class="flex flex-col gap-5 border-b pb-8 sm:flex-row sm:items-center">
-      {person.imageUrl ? (
-        <img
-          src={person.imageUrl}
-          alt=""
-          width="96"
-          height="96"
-          loading="lazy"
-          referrerpolicy="no-referrer"
-          class="size-24 shrink-0 rounded-full border object-cover"
-        />
-      ) : (
-        <div class="flex size-24 shrink-0 items-center justify-center rounded-full border bg-muted font-heading text-2xl text-muted-foreground">
-          {initials}
+    <section class="relative overflow-hidden rounded-xl bg-foreground px-6 py-8 text-background sm:px-8">
+      <div class="pointer-events-none absolute -top-24 -right-20 size-64 rounded-full bg-amber-400/20 blur-3xl"></div>
+      <div class="relative flex flex-col gap-6 sm:flex-row sm:items-center">
+        {person.imageUrl ? (
+          <img
+            src={person.imageUrl}
+            alt=""
+            width="112"
+            height="112"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            class="size-24 shrink-0 rounded-full border border-background/20 object-cover shadow-2xl sm:size-28"
+          />
+        ) : (
+          <div class="flex size-24 shrink-0 items-center justify-center rounded-full border border-background/20 bg-background/10 font-heading text-3xl text-background shadow-2xl sm:size-28">
+            {initials}
+          </div>
+        )}
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className="border-background/20 bg-background/10 text-background"
+            >
+              Spelare
+            </Badge>
+            {latest ? (
+              <Badge
+                variant="outline"
+                className="border-background/20 text-background/80"
+              >
+                {latest.seasonLabel}
+              </Badge>
+            ) : null}
+          </div>
+          <h1 class="mt-3 font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
+            {person.name}
+          </h1>
+          {latest ? (
+            <p class="mt-2 text-sm text-background/70">
+              <a
+                href={`/lag/${latest.competitionExternalId}/${latest.teamExternalId}`}
+                class="underline decoration-background/30 underline-offset-4 hover:text-background"
+              >
+                {latest.clubName}
+              </a>
+              {" · "}
+              <a
+                href={`/serie/${latest.competitionExternalId}`}
+                class="underline decoration-background/30 underline-offset-4 hover:text-background"
+              >
+                {latest.competitionName}
+              </a>
+            </p>
+          ) : null}
         </div>
-      )}
-      <div>
-        <p class="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-          Spelare
-        </p>
-        <h1 class="mt-1 font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-          {person.name}
-        </h1>
-        {latest ? (
-          <p class="mt-2 text-muted-foreground">
-            <a
-              href={`/lag/${latest.competitionExternalId}/${latest.teamExternalId}`}
-              class="underline decoration-border underline-offset-4 hover:text-foreground"
-            >
-              {latest.clubName}
-            </a>
-            {" · "}
-            <a
-              href={`/serie/${latest.competitionExternalId}`}
-              class="underline decoration-border underline-offset-4 hover:text-foreground"
-            >
-              {latest.competitionName}
-            </a>
-          </p>
-        ) : null}
       </div>
-    </header>
+    </section>
 
     {skaterTotals.matches > 0 ? (
-      <section class="mt-8">
-        <h2 class="font-heading text-xl font-semibold">Karriär</h2>
-        <dl class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-5">
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Matcher
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {skaterTotals.matches}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Mål
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {skaterTotals.goals}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Assists
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {skaterTotals.assists}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Poäng
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {skaterTotals.points}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Utvisning
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {skaterTotals.penaltyMinutes}
-            </dd>
-          </div>
-        </dl>
-      </section>
+      <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {skaterStats.map((stat) => (
+          <Card
+            className={cn(
+              "gap-0 py-4",
+              stat.highlight &&
+                "border-primary bg-primary text-primary-foreground"
+            )}
+          >
+            <CardContent className="px-4">
+              <p
+                class={cn(
+                  "text-[0.65rem] font-medium tracking-wider uppercase",
+                  stat.highlight
+                    ? "text-primary-foreground/70"
+                    : "text-muted-foreground"
+                )}
+              >
+                {stat.label}
+              </p>
+              <p class="mt-1 font-heading text-3xl font-semibold tabular-nums">
+                {stat.value}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     ) : null}
 
     {goalieTotals.matches > 0 ? (
-      <section class="mt-8">
-        <h2 class="font-heading text-xl font-semibold">Målvakt</h2>
-        <dl class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Matcher
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {goalieTotals.matches}
-            </dd>
+      <Card className="mt-3">
+        <CardHeader>
+          <div class="flex items-center justify-between gap-4">
+            <CardTitle className="font-heading text-xl">Målvakt</CardTitle>
+            <span class="text-sm font-semibold tabular-nums">
+              {savePercentage != null ? savePercentage.toFixed(2) : "-"} %
+            </span>
           </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Skott
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {goalieTotals.shotsAgainst}
-            </dd>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Progress value={savePercentage ?? 0} />
+          <div class="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <p class="text-xs tracking-wider text-muted-foreground uppercase">
+                Matcher
+              </p>
+              <p class="mt-1 font-heading text-2xl font-semibold tabular-nums">
+                {goalieTotals.matches}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs tracking-wider text-muted-foreground uppercase">
+                Skott
+              </p>
+              <p class="mt-1 font-heading text-2xl font-semibold tabular-nums">
+                {goalieTotals.shotsAgainst}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs tracking-wider text-muted-foreground uppercase">
+                Insläppta
+              </p>
+              <p class="mt-1 font-heading text-2xl font-semibold tabular-nums">
+                {goalieTotals.goalsAgainst}
+              </p>
+            </div>
           </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Insläppta
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {goalieTotals.goalsAgainst}
-            </dd>
+        </CardContent>
+      </Card>
+    ) : null}
+
+    {seasonBars.length > 1 ? (
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="font-heading text-xl">
+            Poäng per säsong
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="flex items-end gap-3">
+            {seasonBars.map(([label, points]) => (
+              <div class="flex flex-1 flex-col items-center gap-1">
+                <span class="text-xs tabular-nums text-muted-foreground">
+                  {points}
+                </span>
+                <div class="flex h-28 w-full items-end">
+                  <div
+                    class="w-full rounded-t-sm bg-primary"
+                    style={`height: ${Math.max(6, Math.round((points / maxPoints) * 100))}%`}
+                  />
+                </div>
+                <span class="text-[0.65rem] text-muted-foreground">
+                  {label}
+                </span>
+              </div>
+            ))}
           </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Räddning %
-            </dt>
-            <dd class="font-heading text-2xl font-semibold tabular-nums">
-              {savePercentage != null ? savePercentage.toFixed(2) : "-"}
-            </dd>
-          </div>
-        </dl>
-      </section>
+        </CardContent>
+      </Card>
     ) : null}
 
     {skaterRows.length > 0 ? (
-      <section class="mt-12">
-        <h2 class="font-heading text-2xl font-semibold">Säsonger</h2>
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
-                <th class="py-2 pr-3 font-medium">Säsong</th>
-                <th class="py-2 pr-3 font-medium">Serie</th>
-                <th class="hidden py-2 pr-3 font-medium sm:table-cell">Lag</th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="font-heading text-xl">Säsonger</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Säsong</TableHead>
+                <TableHead>Serie</TableHead>
+                <TableHead className="hidden sm:table-cell">Lag</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">
                   M
-                </th>
-                <th class="py-2 pl-3 text-right font-medium">Mål</th>
-                <th class="py-2 pl-3 text-right font-medium">Ass</th>
-                <th class="py-2 pl-3 text-right font-medium">P</th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+                </TableHead>
+                <TableHead className="text-right">Mål</TableHead>
+                <TableHead className="text-right">Ass</TableHead>
+                <TableHead className="text-right">P</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">
                   Utv
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {skaterRows.map((row) => (
-                <tr class="border-b border-border/60">
-                  <td class="py-2 pr-3 tabular-nums">{row.seasonLabel}</td>
-                  <td class="py-2 pr-3">
+                <TableRow>
+                  <TableCell className="tabular-nums">
+                    {row.seasonLabel}
+                  </TableCell>
+                  <TableCell>
                     <a
                       href={`/serie/${row.competitionExternalId}`}
                       class="underline decoration-border underline-offset-4 hover:text-foreground"
                     >
                       {row.competitionName}
                     </a>
-                  </td>
-                  <td class="hidden py-2 pr-3 text-muted-foreground sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
                     <a
                       href={`/lag/${row.competitionExternalId}/${row.teamExternalId}`}
                       class="underline decoration-border underline-offset-4 hover:text-foreground"
                     >
                       {row.clubName}
                     </a>
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden text-right tabular-nums sm:table-cell">
                     {row.matches}
-                  </td>
-                  <td class="py-2 pl-3 text-right tabular-nums">{row.goals}</td>
-                  <td class="py-2 pl-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {row.goals}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
                     {row.assists}
-                  </td>
-                  <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
                     {row.points}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden text-right tabular-nums sm:table-cell">
                     {row.penaltyMinutes}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     ) : null}
 
     {goalieRows.length > 0 ? (
-      <section class="mt-12">
-        <h2 class="font-heading text-2xl font-semibold">Målvaktssäsonger</h2>
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
-                <th class="py-2 pr-3 font-medium">Säsong</th>
-                <th class="py-2 pr-3 font-medium">Serie</th>
-                <th class="hidden py-2 pr-3 font-medium sm:table-cell">Lag</th>
-                <th class="py-2 pl-3 text-right font-medium">M</th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="font-heading text-xl">
+            Målvaktssäsonger
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Säsong</TableHead>
+                <TableHead>Serie</TableHead>
+                <TableHead className="hidden sm:table-cell">Lag</TableHead>
+                <TableHead className="text-right">M</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">
                   Skott
-                </th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+                </TableHead>
+                <TableHead className="hidden text-right sm:table-cell">
                   IM
-                </th>
-                <th class="py-2 pl-3 text-right font-medium">Räddning %</th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead className="text-right">Räddning %</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {goalieRows.map((row) => (
-                <tr class="border-b border-border/60">
-                  <td class="py-2 pr-3 tabular-nums">{row.seasonLabel}</td>
-                  <td class="py-2 pr-3">
+                <TableRow>
+                  <TableCell className="tabular-nums">
+                    {row.seasonLabel}
+                  </TableCell>
+                  <TableCell>
                     <a
                       href={`/serie/${row.competitionExternalId}`}
                       class="underline decoration-border underline-offset-4 hover:text-foreground"
                     >
                       {row.competitionName}
                     </a>
-                  </td>
-                  <td class="hidden py-2 pr-3 text-muted-foreground sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
                     <a
                       href={`/lag/${row.competitionExternalId}/${row.teamExternalId}`}
                       class="underline decoration-border underline-offset-4 hover:text-foreground"
                     >
                       {row.clubName}
                     </a>
-                  </td>
-                  <td class="py-2 pl-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
                     {row.goalieMatches}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden text-right tabular-nums sm:table-cell">
                     {row.shotsAgainst}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden text-right tabular-nums sm:table-cell">
                     {row.goalsAgainst}
-                  </td>
-                  <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
                     {row.savePercentage != null
                       ? row.savePercentage.toFixed(2)
                       : "-"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     ) : null}
 
     {rows.length === 0 ? (
-      <p class="mt-12 text-sm text-muted-foreground">
+      <p class="mt-10 text-sm text-muted-foreground">
         Ingen statistik registrerad ännu.
       </p>
     ) : (
-      <p class="mt-10 text-xs text-muted-foreground">
+      <p class="mt-8 text-xs text-muted-foreground">
         Karriären omfattar de säsonger som är inlästa.
       </p>
     )}
