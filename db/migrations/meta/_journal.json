@@ -8,6 +8,13 @@
       "when": 1795710754817,
       "tag": "0000_flowery_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795711756637,
+      "tag": "0001_low_newton_destine",
+      "breakpoints": true
     }
   ]
 }

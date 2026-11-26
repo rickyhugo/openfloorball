@@ -1,0 +1,229 @@
+---
+import Layout from "@/layouts/main.astro"
+import { StandingTable } from "@/components/standings-table"
+import { getCompetition } from "@/lib/db/queries"
+
+export const prerender = false
+
+const { id } = Astro.params
+if (!id) return Astro.redirect("/")
+
+const data = await getCompetition(id)
+if (!data) return Astro.redirect("/")
+
+const standingRows = data.standings.map((row) => ({
+  position: row.position,
+  teamId: row.teamId,
+  teamName: row.teamName,
+  played: row.played,
+  regulationWins: row.regulationWins,
+  overtimeWins: row.overtimeWins,
+  overtimeLosses: row.overtimeLosses,
+  regulationLosses: row.regulationLosses,
+  goalsFor: row.goalsFor,
+  goalsAgainst: row.goalsAgainst,
+  points: row.points,
+}))
+
+const dateFormat = new Intl.DateTimeFormat("sv-SE", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Stockholm",
+})
+
+function formatDate(value: Date | null) {
+  return value ? dateFormat.format(value) : "Tid ej satt"
+}
+
+function suffix(decidedBy: string | null) {
+  if (decidedBy === "overtime") return " e.förl."
+  if (decidedBy === "shootout") return " str."
+  return ""
+}
+
+const finished = data.games.filter((game) => game.status === "finished")
+const upcoming = data.games.filter((game) => game.status === "scheduled")
+
+const rounds = new Map<string, typeof finished>()
+for (const game of finished) {
+  const key = game.round ?? "Matcher"
+  rounds.set(key, [...(rounds.get(key) ?? []), game])
+}
+const orderedRounds = [...rounds.entries()].sort(
+  (a, b) =>
+    Math.min(...b[1].map((game) => game.startsAt?.getTime() ?? 0)) -
+    Math.min(...a[1].map((game) => game.startsAt?.getTime() ?? 0))
+)
+
+const title = `${data.name} ${data.seasonLabel}`
+---
+
+<Layout
+  title={`${title}, tabell och resultat`}
+  description={`Tabell, resultat och skytteliga för ${data.name} ${data.seasonLabel}.`}
+>
+  <main class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
+    <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
+      <a
+        href="/"
+        class="underline decoration-border underline-offset-4 hover:text-foreground"
+      >
+        Alla serier
+      </a>
+      <span class="mx-2">/</span>
+      <span>{data.categoryName ?? data.name}</span>
+    </nav>
+
+    <StandingTable
+      competition={data.name}
+      season={data.seasonLabel}
+      source="stats.innebandy.se"
+      updatedLabel={`${standingRows.length} lag`}
+      note="Källa: iBIS. Tabellen uppdateras när nya matcher rapporteras."
+      rows={standingRows}
+      client:visible
+    />
+
+    {orderedRounds.length > 0 ? (
+      <section class="mt-14">
+        <h2 class="font-heading text-2xl font-semibold">Resultat</h2>
+        <div class="mt-4 divide-y border-y">
+          {orderedRounds.map(([round, games], index) => (
+            <details open={index < 2} class="group py-3">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium">
+                <span>{round}</span>
+                <span class="text-xs font-normal text-muted-foreground">
+                  {games.length} matcher
+                </span>
+              </summary>
+              <ul class="mt-3 space-y-2">
+                {games.map((game) => (
+                  <li class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 text-sm">
+                    <span class="truncate text-right">{game.homeName}</span>
+                    <span class="font-semibold whitespace-nowrap tabular-nums">
+                      {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
+                      <span class="text-xs font-normal text-muted-foreground">
+                        {suffix(game.decidedBy)}
+                      </span>
+                    </span>
+                    <span class="truncate">{game.awayName}</span>
+                    <span class="col-span-3 text-center text-xs text-muted-foreground">
+                      {formatDate(game.startsAt)}
+                      {game.venue ? `, ${game.venue}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ))}
+        </div>
+      </section>
+    ) : null}
+
+    {upcoming.length > 0 ? (
+      <section class="mt-14">
+        <h2 class="font-heading text-2xl font-semibold">Kommande matcher</h2>
+        <ul class="mt-4 divide-y border-y">
+          {upcoming.slice(0, 12).map((game) => (
+            <li class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 py-2.5 text-sm">
+              <span class="truncate text-right">{game.homeName}</span>
+              <span class="whitespace-nowrap text-xs text-muted-foreground">
+                {formatDate(game.startsAt)}
+              </span>
+              <span class="truncate">{game.awayName}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ) : null}
+
+    {data.leaders.length > 0 ? (
+      <section class="mt-14">
+        <h2 class="font-heading text-2xl font-semibold">Skytteliga</h2>
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
+                <th class="py-2 pr-3 font-medium">Spelare</th>
+                <th class="py-2 pr-3 font-medium">Lag</th>
+                <th class="py-2 pl-3 text-right font-medium">M</th>
+                <th class="py-2 pl-3 text-right font-medium">Mål</th>
+                <th class="py-2 pl-3 text-right font-medium">Ass</th>
+                <th class="py-2 pl-3 text-right font-medium">P</th>
+                <th class="py-2 pl-3 text-right font-medium">Utv</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.leaders.map((row) => (
+                <tr class="border-b border-border/60">
+                  <td class="py-2 pr-3">{row.playerName}</td>
+                  <td class="py-2 pr-3 text-muted-foreground">
+                    {row.clubName}
+                  </td>
+                  <td class="py-2 pl-3 text-right tabular-nums">
+                    {row.matches}
+                  </td>
+                  <td class="py-2 pl-3 text-right tabular-nums">{row.goals}</td>
+                  <td class="py-2 pl-3 text-right tabular-nums">
+                    {row.assists}
+                  </td>
+                  <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                    {row.points}
+                  </td>
+                  <td class="py-2 pl-3 text-right tabular-nums">
+                    {row.penaltyMinutes}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ) : null}
+
+    {data.goalies.length > 0 ? (
+      <section class="mt-14">
+        <h2 class="font-heading text-2xl font-semibold">Målvakter</h2>
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
+                <th class="py-2 pr-3 font-medium">Spelare</th>
+                <th class="py-2 pr-3 font-medium">Lag</th>
+                <th class="py-2 pl-3 text-right font-medium">M</th>
+                <th class="py-2 pl-3 text-right font-medium">Skott</th>
+                <th class="py-2 pl-3 text-right font-medium">IM</th>
+                <th class="py-2 pl-3 text-right font-medium">Räddning %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.goalies.map((row) => (
+                <tr class="border-b border-border/60">
+                  <td class="py-2 pr-3">{row.playerName}</td>
+                  <td class="py-2 pr-3 text-muted-foreground">
+                    {row.clubName}
+                  </td>
+                  <td class="py-2 pl-3 text-right tabular-nums">
+                    {row.matches}
+                  </td>
+                  <td class="py-2 pl-3 text-right tabular-nums">
+                    {row.shotsAgainst}
+                  </td>
+                  <td class="py-2 pl-3 text-right tabular-nums">
+                    {row.goalsAgainst}
+                  </td>
+                  <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                    {row.savePercentage.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ) : null}
+  </main>
+</Layout>

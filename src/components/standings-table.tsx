@@ -44,6 +44,7 @@ export type StandingTableProps = {
   season: string
   source: string
   updatedLabel: string
+  note?: string
   rows: Standing[]
 }
 
@@ -121,6 +122,7 @@ export function StandingTable({
   season,
   source,
   updatedLabel,
+  note,
   rows,
 }: StandingTableProps) {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
@@ -302,7 +304,7 @@ export function StandingTable({
             {source}
           </a>
         </p>
-        <p>Detta är exempeldata (fixture) och inte live-resultat.</p>
+        {note ? <p>{note}</p> : null}
       </footer>
     </section>
   )

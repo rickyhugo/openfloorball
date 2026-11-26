@@ -4,6 +4,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -53,12 +54,15 @@ export const club = pgTable(
       .references(() => country.id),
     slug: text("slug").notNull(),
     name: text("name").notNull(),
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => [
     uniqueIndex("club_country_slug_idx").on(table.countryId, table.slug),
+    uniqueIndex("club_source_external_idx").on(table.source, table.externalId),
   ]
 )
 
@@ -71,14 +75,23 @@ export const competition = pgTable(
       .references(() => country.id),
     slug: text("slug").notNull(),
     name: text("name").notNull(),
+    categoryId: integer("category_id"),
+    categoryName: text("category_name"),
+    logoUrl: text("logo_url"),
     gender: gender("gender").notNull(),
     kind: competitionKind("kind").notNull(),
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => [
     uniqueIndex("competition_country_slug_idx").on(table.countryId, table.slug),
+    uniqueIndex("competition_source_external_idx").on(
+      table.source,
+      table.externalId
+    ),
   ]
 )
 
@@ -118,12 +131,17 @@ export const teamSeason = pgTable(
       .references(() => club.id),
     name: text("name").notNull(),
     shortName: text("short_name"),
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => [
-    uniqueIndex("team_season_season_club_idx").on(table.seasonId, table.clubId),
+    uniqueIndex("team_season_source_external_idx").on(
+      table.source,
+      table.externalId
+    ),
   ]
 )
 
@@ -186,6 +204,153 @@ export const sourceRef = pgTable(
       table.externalId
     ),
     index("source_ref_entity_idx").on(table.entityType, table.entityId),
+  ]
+)
+
+export const player = pgTable(
+  "player",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
+    name: text("name").notNull(),
+    imageUrl: text("image_url"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("player_source_external_idx").on(
+      table.source,
+      table.externalId
+    ),
+  ]
+)
+
+export const rosterEntry = pgTable(
+  "roster_entry",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => season.id),
+    teamSeasonId: uuid("team_season_id")
+      .notNull()
+      .references(() => teamSeason.id),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => player.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("roster_entry_season_team_player_idx").on(
+      table.seasonId,
+      table.teamSeasonId,
+      table.playerId
+    ),
+  ]
+)
+
+export const teamSeasonStat = pgTable(
+  "team_season_stat",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => season.id),
+    teamSeasonId: uuid("team_season_id")
+      .notNull()
+      .references(() => teamSeason.id),
+    position: integer("position").notNull(),
+    played: integer("played").notNull(),
+    wins: integer("wins").notNull(),
+    overtimeWins: integer("overtime_wins").notNull(),
+    overtimeLosses: integer("overtime_losses").notNull(),
+    losses: integer("losses").notNull(),
+    goalsFor: integer("goals_for").notNull(),
+    goalsAgainst: integer("goals_against").notNull(),
+    points: integer("points").notNull(),
+    powerPlayGoals: integer("power_play_goals").notNull().default(0),
+    boxPlayGoals: integer("box_play_goals").notNull().default(0),
+    penaltyMinutes: integer("penalty_minutes").notNull().default(0),
+    attendanceTotal: integer("attendance_total"),
+    attendanceAverage: real("attendance_average"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("team_season_stat_season_team_idx").on(
+      table.seasonId,
+      table.teamSeasonId
+    ),
+  ]
+)
+
+export const playerCompetitionStat = pgTable(
+  "player_competition_stat",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => season.id),
+    teamSeasonId: uuid("team_season_id")
+      .notNull()
+      .references(() => teamSeason.id),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => player.id),
+    matches: integer("matches").notNull(),
+    goals: integer("goals").notNull(),
+    assists: integer("assists").notNull(),
+    points: integer("points").notNull(),
+    penaltyMinutes: integer("penalty_minutes").notNull().default(0),
+    powerPlayGoals: integer("power_play_goals").notNull().default(0),
+    powerPlayAssists: integer("power_play_assists").notNull().default(0),
+    boxPlayGoals: integer("box_play_goals").notNull().default(0),
+    boxPlayAssists: integer("box_play_assists").notNull().default(0),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("player_competition_stat_season_team_player_idx").on(
+      table.seasonId,
+      table.teamSeasonId,
+      table.playerId
+    ),
+  ]
+)
+
+export const goalieCompetitionStat = pgTable(
+  "goalie_competition_stat",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => season.id),
+    teamSeasonId: uuid("team_season_id")
+      .notNull()
+      .references(() => teamSeason.id),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => player.id),
+    matches: integer("matches").notNull(),
+    shotsAgainst: integer("shots_against").notNull(),
+    goalsAgainst: integer("goals_against").notNull(),
+    savePercentage: real("save_percentage").notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("goalie_competition_stat_season_team_player_idx").on(
+      table.seasonId,
+      table.teamSeasonId,
+      table.playerId
+    ),
   ]
 )
 
