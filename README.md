@@ -1,6 +1,6 @@
 # OpenFloorball
 
-Floorball statistics, tables and reports. It starts with Sweden and is built to cover every federation and the World Championships.
+Floorball statistics, tables and reports. It covers Sweden, Finland and Switzerland today and is built to cover every federation and the World Championships.
 
 ## Stack
 
@@ -31,6 +31,30 @@ mise run db:migrate
 
 `dev` and `prd` currently point at the same Neon database. Create a Neon branch before the site takes real writes.
 
+## Ingestion
+
+Swedish leagues come from the signed iBIS API, collected through `stats.innebandy.se` in a headless browser.
+
+```sh
+mise run ingest:collect   # capture raw iBIS responses
+mise run ingest:load      # load Sweden into Postgres
+mise run ingest:verify    # check loaded competitions
+```
+
+Finland comes from `fliiga.com`, which requires an anti-bot cookie. Pass it in `FLIIGA_COOKIE` (a `name=value; name=value` header string).
+
+```sh
+FLIIGA_COOKIE="..." mise run ingest:fi
+```
+
+Switzerland comes from the public `myapp.swissunihockey.ch` pages, read in a headless browser.
+
+```sh
+mise run ingest:ch
+```
+
+External league loaders share `ingest/external/load.ts`. They upsert country, competition, season, clubs, season teams, standings and games, then refresh the search index.
+
 ## Status
 
-One page exists. It shows the SSL Herrar 2024/25 standings from a fixture. Ingestion, Postgres and every other competition are not built yet.
+Live on the tailnet at `https://openfloorball.hugoplanet.se`. It has country-aware navigation, a competition directory, standings, results, fixtures, team pages, player pages for Sweden, and global search. Finland and Switzerland include current-season standings, results and fixtures; player statistics for those countries are not loaded yet.
