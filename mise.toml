@@ -41,6 +41,12 @@ run = "bash ingest/backfill.sh"
 [tasks."ingest:verify"]
 run = "doppler run -- tsx ingest/verify.ts"
 
+[tasks."ingest:fi"]
+run = "doppler run -- tsx ingest/finland.ts"
+
+[tasks."ingest:ch"]
+run = "doppler run -- tsx ingest/switzerland.ts"
+
 [tasks."db:studio"]
 run = "doppler run -- drizzle-kit studio"
 

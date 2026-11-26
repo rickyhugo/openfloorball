@@ -41,6 +41,7 @@
     "@astrojs/check": "^0.9",
     "@eslint/js": "^10",
     "@types/node": "^26.6.11",
+    "cheerio": "^1.2.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^10",
     "eslint-plugin-react-hooks": "^7.1.1",
