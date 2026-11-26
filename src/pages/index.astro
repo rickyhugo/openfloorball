@@ -83,6 +83,12 @@ const sections = [
                       class="text-sm leading-6 underline decoration-border underline-offset-4 hover:text-foreground hover:decoration-foreground"
                     >
                       {item.name}
+                      {item.regionName && item.regionName !== "Svenska IBF" ? (
+                        <span class="text-muted-foreground">
+                          {" "}
+                          · {item.regionName}
+                        </span>
+                      ) : null}
                     </a>
                   </li>
                 ))}
