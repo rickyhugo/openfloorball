@@ -22,7 +22,11 @@ const SCORE = `
 `
 
 export async function search(term: string): Promise<SearchHit[]> {
-  const query = term.trim()
+  const query = term
+    .trim()
+    .slice(0, 80)
+    .replace(/[%_\\]/g, " ")
+    .trim()
   if (query.length < 2) return []
 
   const fast = (await client.query(
