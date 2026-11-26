@@ -20,5 +20,14 @@ run = "npm run typecheck"
 [tasks.build]
 run = "npm run build"
 
+[tasks."db:generate"]
+run = "doppler run -- drizzle-kit generate"
+
+[tasks."db:migrate"]
+run = "doppler run -- drizzle-kit migrate"
+
+[tasks."db:studio"]
+run = "doppler run -- drizzle-kit studio"
+
 [tasks.format]
 run = "npm run format"

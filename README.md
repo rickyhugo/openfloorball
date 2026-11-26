@@ -18,7 +18,18 @@ mise run lint
 
 ## Environment
 
-Secrets live in Doppler, project `openfloorball`, config `dev`. Run `doppler login` once, then `doppler setup --no-interactive` in the repository root. `mise run dev` starts the server with the secrets injected, and `mise run secrets` lists their names. Never commit a secret. `.env*` is ignored.
+Secrets live in Doppler, workplace `hugoplanet`, project `openfloorball`, config `dev`. Run `doppler login` once, then `doppler setup --no-interactive` in the repository root. `mise run dev` starts the server with the secrets injected, and `mise run secrets` lists their names. Never commit a secret. `.env*` is ignored.
+
+## Database
+
+The schema is in `src/lib/db/schema.ts` and migrations are in `db/migrations`.
+
+```sh
+mise run db:generate
+mise run db:migrate
+```
+
+`dev` and `prd` currently point at the same Neon database. Create a Neon branch before the site takes real writes.
 
 ## Status
 
