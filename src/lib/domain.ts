@@ -2,6 +2,7 @@ export type Standing = {
   position: number
   teamId: string
   teamName: string
+  teamHref?: string
   played: number
   regulationWins: number
   overtimeWins: number

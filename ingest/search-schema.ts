@@ -9,7 +9,7 @@ with comp as (
 ),
 team as (
   select distinct on (cl.id, c.id)
-    cl.id::text || ':' || c.id::text as id, cl.name as title, c.name as subtitle, c.external_id
+    cl.id::text || ':' || c.id::text as id, cl.name as title, c.name as subtitle, c.external_id, ts.external_id as team_ext
   from team_season ts
   join club cl on cl.id = ts.club_id
   join season s on s.id = ts.season_id
@@ -43,7 +43,7 @@ select 'competition'::text as kind, comp.id::text as id, comp.name as title,
        10 as weight
 from comp
 union all
-select 'team', team.id, team.title, team.subtitle, '/serie/' || team.external_id,
+select 'team', team.id, team.title, team.subtitle, '/lag/' || team.external_id || '/' || team.team_ext,
        lower(unaccent(concat_ws(' ', team.title, team.subtitle, 'lag'))), 9
 from team
 union all

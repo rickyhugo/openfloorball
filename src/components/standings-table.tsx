@@ -126,6 +126,8 @@ export function StandingTable({
   rows,
 }: StandingTableProps) {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
+  const [showAll, setShowAll] = useState(false)
+  const mobileHidden = showAll ? undefined : "hidden sm:table-cell"
 
   const sortedRows = useMemo(() => {
     const getValue = sortValue[sort.key]
@@ -169,7 +171,27 @@ export function StandingTable({
         </p>
       </header>
 
-      <Table className="min-w-[46rem] border-y">
+      <div className="flex items-center justify-between gap-3 sm:hidden">
+        <p className="text-xs text-muted-foreground">
+          {showAll
+            ? "Svep i tabellen för fler kolumner."
+            : "Färre kolumner på mobil."}
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowAll((value) => !value)}
+          className="shrink-0 text-xs font-medium underline decoration-border underline-offset-4"
+        >
+          {showAll ? "Visa färre" : "Visa alla kolumner"}
+        </button>
+      </div>
+
+      <Table
+        className={cn(
+          "border-y",
+          showAll ? "min-w-[46rem]" : "sm:min-w-[46rem]"
+        )}
+      >
         <TableCaption className="sr-only">
           Tabell för {competition} {season}
         </TableCaption>
@@ -200,22 +222,22 @@ export function StandingTable({
               description="Vinster i ordinarie tid"
               sort={sort}
               onSort={handleSort}
-              className="px-2"
+              className={cn("px-2", mobileHidden)}
             />
             <StaticHead
               label="ÖV"
               description="Övertidsvinster"
-              className="px-2"
+              className={cn("px-2", mobileHidden)}
             />
             <StaticHead
               label="ÖF"
               description="Övertidsförluster"
-              className="px-2"
+              className={cn("px-2", mobileHidden)}
             />
             <StaticHead
               label="F"
               description="Förluster i ordinarie tid"
-              className="px-2"
+              className={cn("px-2", mobileHidden)}
             />
             <SortableHead
               sortKey="goalsFor"
@@ -223,7 +245,7 @@ export function StandingTable({
               description="Gjorda mål"
               sort={sort}
               onSort={handleSort}
-              className="px-2"
+              className={cn("px-2", mobileHidden)}
             />
             <SortableHead
               sortKey="goalsAgainst"
@@ -231,7 +253,7 @@ export function StandingTable({
               description="Insläppta mål"
               sort={sort}
               onSort={handleSort}
-              className="px-2"
+              className={cn("px-2", mobileHidden)}
             />
             <SortableHead
               sortKey="goalDifference"
@@ -257,28 +279,64 @@ export function StandingTable({
               <TableCell className="sticky left-0 z-10 w-10 bg-background px-2 py-2.5 text-right text-muted-foreground tabular-nums group-hover/row:bg-muted/50">
                 {row.position}
               </TableCell>
-              <TableCell className="sticky left-10 z-10 bg-background px-2 py-2.5 font-medium group-hover/row:bg-muted/50">
-                {row.teamName}
+              <TableCell className="sticky left-10 z-10 max-w-40 truncate bg-background px-2 py-2.5 font-medium group-hover/row:bg-muted/50 sm:max-w-none">
+                {row.teamHref ? (
+                  <a href={row.teamHref} className="hover:underline">
+                    {row.teamName}
+                  </a>
+                ) : (
+                  row.teamName
+                )}
               </TableCell>
               <TableCell className="px-2 py-2.5 text-right tabular-nums">
                 {row.played}
               </TableCell>
-              <TableCell className="px-2 py-2.5 text-right tabular-nums">
+              <TableCell
+                className={cn(
+                  "px-2 py-2.5 text-right tabular-nums",
+                  mobileHidden
+                )}
+              >
                 {row.regulationWins}
               </TableCell>
-              <TableCell className="px-2 py-2.5 text-right tabular-nums">
+              <TableCell
+                className={cn(
+                  "px-2 py-2.5 text-right tabular-nums",
+                  mobileHidden
+                )}
+              >
                 {row.overtimeWins}
               </TableCell>
-              <TableCell className="px-2 py-2.5 text-right tabular-nums">
+              <TableCell
+                className={cn(
+                  "px-2 py-2.5 text-right tabular-nums",
+                  mobileHidden
+                )}
+              >
                 {row.overtimeLosses}
               </TableCell>
-              <TableCell className="px-2 py-2.5 text-right tabular-nums">
+              <TableCell
+                className={cn(
+                  "px-2 py-2.5 text-right tabular-nums",
+                  mobileHidden
+                )}
+              >
                 {row.regulationLosses}
               </TableCell>
-              <TableCell className="px-2 py-2.5 text-right tabular-nums">
+              <TableCell
+                className={cn(
+                  "px-2 py-2.5 text-right tabular-nums",
+                  mobileHidden
+                )}
+              >
                 {row.goalsFor}
               </TableCell>
-              <TableCell className="px-2 py-2.5 text-right tabular-nums">
+              <TableCell
+                className={cn(
+                  "px-2 py-2.5 text-right tabular-nums",
+                  mobileHidden
+                )}
+              >
                 {row.goalsAgainst}
               </TableCell>
               <TableCell className="px-2 py-2.5 text-right tabular-nums">

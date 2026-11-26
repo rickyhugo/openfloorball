@@ -1,6 +1,7 @@
 ---
 import "@/styles/global.css"
-import Search from "@/components/search.astro"
+import { AppShell, type NavGroup } from "@/components/app-shell"
+import { listCompetitions } from "@/lib/db/queries"
 
 type Props = {
   title?: string
@@ -11,6 +12,43 @@ const {
   title = "OpenFloorball, svensk innebandy",
   description = "Tabeller, resultat och statistik för svensk innebandy.",
 } = Astro.props
+
+const competitions = await listCompetitions()
+const sslMen = competitions.find(
+  (row) => row.name.includes("SSL") && row.name.includes("Herrar")
+)
+const sslWomen = competitions.find(
+  (row) => row.name.includes("SSL") && row.name.includes("Damer")
+)
+const allsMen = competitions.find((row) =>
+  row.name.includes("Allsvenskan Herrar")
+)
+
+const nav: NavGroup[] = [
+  {
+    label: "Översikt",
+    items: [
+      { label: "Alla serier", href: "/" },
+      { label: "Herrar", href: "/#herrar" },
+      { label: "Damer", href: "/#damer" },
+    ],
+  },
+  {
+    label: "Toppserier",
+    items: [
+      sslMen
+        ? { label: "SSL Herrar", href: `/serie/${sslMen.externalId}` }
+        : null,
+      sslWomen
+        ? { label: "SSL Damer", href: `/serie/${sslWomen.externalId}` }
+        : null,
+      allsMen
+        ? { label: "Allsvenskan Herrar", href: `/serie/${allsMen.externalId}` }
+        : null,
+      { label: "Allsvenskan Damer", href: "/#damer" },
+    ].filter((item): item is { label: string; href: string } => item !== null),
+  },
+]
 ---
 
 <html lang="sv">
@@ -23,19 +61,8 @@ const {
     <meta name="theme-color" content="#ffffff" />
   </head>
   <body class="min-h-svh">
-    <header class="border-b border-border/70">
-      <div class="mx-auto flex w-full max-w-5xl items-center gap-4 px-4 py-3 sm:px-6">
-        <a
-          href="/"
-          class="font-heading text-lg font-semibold tracking-tight whitespace-nowrap"
-        >
-          OpenFloorball
-        </a>
-        <div class="ml-auto w-full max-w-sm">
-          <Search />
-        </div>
-      </div>
-    </header>
-    <slot />
+    <AppShell client:load nav={nav}>
+      <slot />
+    </AppShell>
   </body>
 </html>

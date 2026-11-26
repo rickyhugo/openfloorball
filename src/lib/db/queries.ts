@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, or } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { getDb } from "./client"
 import {
@@ -8,6 +8,7 @@ import {
   goalieCompetitionStat,
   player,
   playerCompetitionStat,
+  rosterEntry,
   season,
   teamSeason,
   teamSeasonStat,
@@ -58,6 +59,7 @@ export async function getCompetition(externalId: string) {
     .select({
       position: teamSeasonStat.position,
       teamId: teamSeason.id,
+      teamExternalId: teamSeason.externalId,
       teamName: club.name,
       shortName: teamSeason.shortName,
       played: teamSeasonStat.played,
@@ -152,9 +154,144 @@ export async function getCompetition(externalId: string) {
   return { ...record, standings, games, leaders, goalies }
 }
 
+export async function getTeam(
+  competitionExternalId: string,
+  teamExternalId: string
+) {
+  const db = getDb()
+  const [record] = await db
+    .select({
+      teamSeasonId: teamSeason.id,
+      teamName: teamSeason.name,
+      teamExternalId: teamSeason.externalId,
+      clubName: club.name,
+      competitionExternalId: competition.externalId,
+      competitionName: competition.name,
+      categoryName: competition.categoryName,
+      seasonId: season.id,
+      seasonLabel: season.label,
+    })
+    .from(teamSeason)
+    .innerJoin(club, eq(club.id, teamSeason.clubId))
+    .innerJoin(season, eq(season.id, teamSeason.seasonId))
+    .innerJoin(competition, eq(competition.id, season.competitionId))
+    .where(
+      and(
+        eq(competition.externalId, competitionExternalId),
+        eq(teamSeason.externalId, teamExternalId)
+      )
+    )
+    .limit(1)
+
+  if (!record) return null
+
+  const [standing] = await db
+    .select({
+      position: teamSeasonStat.position,
+      played: teamSeasonStat.played,
+      wins: teamSeasonStat.wins,
+      overtimeWins: teamSeasonStat.overtimeWins,
+      overtimeLosses: teamSeasonStat.overtimeLosses,
+      losses: teamSeasonStat.losses,
+      goalsFor: teamSeasonStat.goalsFor,
+      goalsAgainst: teamSeasonStat.goalsAgainst,
+      points: teamSeasonStat.points,
+      powerPlayGoals: teamSeasonStat.powerPlayGoals,
+      boxPlayGoals: teamSeasonStat.boxPlayGoals,
+      penaltyMinutes: teamSeasonStat.penaltyMinutes,
+      attendanceAverage: teamSeasonStat.attendanceAverage,
+    })
+    .from(teamSeasonStat)
+    .where(
+      and(
+        eq(teamSeasonStat.seasonId, record.seasonId),
+        eq(teamSeasonStat.teamSeasonId, record.teamSeasonId)
+      )
+    )
+    .limit(1)
+
+  const roster = await db
+    .select({
+      playerName: player.name,
+      imageUrl: player.imageUrl,
+      matches: playerCompetitionStat.matches,
+      goals: playerCompetitionStat.goals,
+      assists: playerCompetitionStat.assists,
+      points: playerCompetitionStat.points,
+      penaltyMinutes: playerCompetitionStat.penaltyMinutes,
+      goalieMatches: goalieCompetitionStat.matches,
+      shotsAgainst: goalieCompetitionStat.shotsAgainst,
+      goalsAgainst: goalieCompetitionStat.goalsAgainst,
+      savePercentage: goalieCompetitionStat.savePercentage,
+    })
+    .from(rosterEntry)
+    .innerJoin(player, eq(player.id, rosterEntry.playerId))
+    .leftJoin(
+      playerCompetitionStat,
+      and(
+        eq(playerCompetitionStat.seasonId, rosterEntry.seasonId),
+        eq(playerCompetitionStat.teamSeasonId, rosterEntry.teamSeasonId),
+        eq(playerCompetitionStat.playerId, rosterEntry.playerId)
+      )
+    )
+    .leftJoin(
+      goalieCompetitionStat,
+      and(
+        eq(goalieCompetitionStat.seasonId, rosterEntry.seasonId),
+        eq(goalieCompetitionStat.teamSeasonId, rosterEntry.teamSeasonId),
+        eq(goalieCompetitionStat.playerId, rosterEntry.playerId)
+      )
+    )
+    .where(
+      and(
+        eq(rosterEntry.seasonId, record.seasonId),
+        eq(rosterEntry.teamSeasonId, record.teamSeasonId)
+      )
+    )
+    .orderBy(desc(playerCompetitionStat.points), asc(player.name))
+
+  const homeTeam = alias(teamSeason, "home_team")
+  const awayTeam = alias(teamSeason, "away_team")
+  const homeClub = alias(club, "home_club")
+  const awayClub = alias(club, "away_club")
+
+  const games = await db
+    .select({
+      externalId: game.externalId,
+      round: game.round,
+      startsAt: game.startsAt,
+      status: game.status,
+      homeScore: game.homeScore,
+      awayScore: game.awayScore,
+      decidedBy: game.decidedBy,
+      venue: game.venue,
+      homeName: homeClub.name,
+      awayName: awayClub.name,
+      homeTeamSeasonId: game.homeTeamSeasonId,
+    })
+    .from(game)
+    .innerJoin(homeTeam, eq(homeTeam.id, game.homeTeamSeasonId))
+    .innerJoin(awayTeam, eq(awayTeam.id, game.awayTeamSeasonId))
+    .innerJoin(homeClub, eq(homeClub.id, homeTeam.clubId))
+    .innerJoin(awayClub, eq(awayClub.id, awayTeam.clubId))
+    .where(
+      and(
+        eq(game.seasonId, record.seasonId),
+        or(
+          eq(game.homeTeamSeasonId, record.teamSeasonId),
+          eq(game.awayTeamSeasonId, record.teamSeasonId)
+        )
+      )
+    )
+    .orderBy(asc(game.startsAt))
+
+  return { ...record, standing: standing ?? null, roster, games }
+}
+
 export type CompetitionIndexRow = Awaited<
   ReturnType<typeof listCompetitions>
 >[number]
 export type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetition>>
 >
+export type TeamDetail = NonNullable<Awaited<ReturnType<typeof getTeam>>>

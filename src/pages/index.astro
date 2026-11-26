@@ -50,7 +50,7 @@ const sections = [
   title={`Svensk innebandy ${seasonLabel}, tabeller och resultat`}
   description={`Tabeller, resultat och skytteliga för ${rows.length} svenska seniortävlingar, herrar och damer.`}
 >
-  <main class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
+  <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
     <header class="border-b pb-8">
       <p class="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
         Säsong {seasonLabel}
@@ -65,7 +65,7 @@ const sections = [
     </header>
 
     {sections.map((section) => (
-      <section class="mt-12">
+      <section id={section.key} class="mt-12 scroll-mt-20">
         <h2 class="font-heading text-2xl font-semibold">{section.label}</h2>
         <div class="mt-5 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
           {groupByCategory(section.items).map(([category, items]) => (
@@ -98,5 +98,5 @@ const sections = [
         </div>
       </section>
     ))}
-  </main>
+  </div>
 </Layout>
