@@ -217,6 +217,7 @@ export const player = pgTable(
     externalId: text("external_id").notNull(),
     name: text("name").notNull(),
     imageUrl: text("image_url"),
+    position: text("position"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, or, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { getDb } from "./client"
+import { fillIbisPositions } from "../player-positions"
 import {
   club,
   competition,
@@ -224,6 +225,7 @@ export async function getTeam(
       playerName: player.name,
       playerExternalId: player.externalId,
       imageUrl: player.imageUrl,
+      position: player.position,
       matches: playerCompetitionStat.matches,
       goals: playerCompetitionStat.goals,
       assists: playerCompetitionStat.assists,
@@ -295,7 +297,14 @@ export async function getTeam(
     )
     .orderBy(asc(game.startsAt))
 
-  return { ...record, standing: standing ?? null, roster, games }
+  const rosterWithPositions = await fillIbisPositions(record.source, roster)
+
+  return {
+    ...record,
+    standing: standing ?? null,
+    roster: rosterWithPositions,
+    games,
+  }
 }
 
 export async function getPlayer(externalId: string) {
@@ -304,8 +313,10 @@ export async function getPlayer(externalId: string) {
     .select({
       id: player.id,
       externalId: player.externalId,
+      source: player.source,
       name: player.name,
       imageUrl: player.imageUrl,
+      position: player.position,
     })
     .from(player)
     .where(eq(player.externalId, externalId))
@@ -357,7 +368,14 @@ export async function getPlayer(externalId: string) {
     .where(eq(player.id, person.id))
     .orderBy(desc(season.label), asc(competition.name))
 
-  return { person, rows }
+  const [personWithPosition] = await fillIbisPositions(person.source, [
+    { playerExternalId: person.externalId, position: person.position },
+  ])
+
+  return {
+    person: { ...person, position: personWithPosition?.position ?? null },
+    rows,
+  }
 }
 
 export async function listCountries(label: string) {

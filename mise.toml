@@ -50,6 +50,9 @@ run = "doppler run -- tsx ingest/switzerland.ts"
 [tasks."ingest:players"]
 run = "doppler run -- tsx ingest/player-stats.ts"
 
+[tasks."ingest:positions"]
+run = "doppler run -- tsx ingest/positions.ts"
+
 [tasks."db:studio"]
 run = "doppler run -- drizzle-kit studio"
 

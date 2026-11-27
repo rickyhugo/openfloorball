@@ -177,6 +177,10 @@ async function signedGet<T>(path: string, retry = true): Promise<T> {
   return (await response.json()) as T
 }
 
+export async function ibisGet<T>(path: string): Promise<T> {
+  return signedGet<T>(path)
+}
+
 function statusOf(match: IbisMatch): LiveStatus {
   if (match.Cancelled || match.Abandoned) return "cancelled"
   if (match.HasFinalResult || match.MatchStatus === 4) return "finished"

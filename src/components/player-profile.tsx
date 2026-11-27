@@ -30,6 +30,7 @@ type PlayerRow = {
 type Person = {
   name: string
   imageUrl: string | null
+  position: string | null
 }
 
 const ALL = "all"
@@ -496,6 +497,7 @@ export function PlayerProfile({
           </h1>
           {latest ? (
             <p className="mt-2 text-sm text-muted-foreground">
+              {person.position ? `${person.position} · ` : null}
               <a
                 href={`/lag/${latest.competitionExternalId}/${latest.teamExternalId}`}
                 className="underline decoration-border underline-offset-4 hover:text-foreground"
