@@ -1,3 +1,4 @@
+import { load } from "cheerio"
 import type {
   LiveEvent,
   LiveEventKind,
@@ -17,6 +18,20 @@ const HEADERS = {
 }
 
 const LEAGUES = [9380, 9534]
+const FBC = "https://stats.floorballconnect.com"
+
+function normalize(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+}
+const FBC_HEADERS = {
+  "user-agent":
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+}
 
 type SwissGame = {
   GameID: number
@@ -142,6 +157,160 @@ function timeLabel(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value))
+}
+
+type FbcEvent = {
+  minute: string
+  period: number
+  team: string | null
+  side: "home" | "away" | "break"
+  score: string | null
+  event_kind: "goal" | "penalty" | "break"
+  title: string
+  assist: string | null
+  tag: string | null
+}
+
+const MONTHS_FBC: Record<string, number> = {
+  Jan: 0,
+  Feb: 1,
+  Mar: 2,
+  Apr: 3,
+  May: 4,
+  Jun: 5,
+  Jul: 6,
+  Aug: 7,
+  Sep: 8,
+  Oct: 9,
+  Nov: 10,
+  Dec: 11,
+}
+
+function fbcDateKey(value: string) {
+  const match = value.match(/(\d{1,2})\s+([A-Z][a-z]{2})/)
+  if (!match) return null
+  const day = Number(match[1])
+  const month = MONTHS_FBC[match[2]]
+  if (month === undefined) return null
+  const year = month >= 7 ? 2026 : 2027
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+}
+
+function fbcCategory(leagueId: number) {
+  return `${FBC}/category/${leagueId === 9534 ? "chw" : "ch"}-26-27-regular-season.html`
+}
+
+const fbcIndexCache = new Map<
+  number,
+  { at: number; map: Map<string, string> }
+>()
+
+async function fbcIndex(leagueId: number) {
+  const cached = fbcIndexCache.get(leagueId)
+  if (cached && Date.now() - cached.at < 10 * 60_000) return cached.map
+  const response = await fetch(fbcCategory(leagueId), {
+    headers: FBC_HEADERS,
+    cache: "no-store",
+  })
+  if (!response.ok) throw new Error(`FBC category failed: ${response.status}`)
+  const $ = load(await response.text())
+  const map = new Map<string, string>()
+  $("a.fs-match").each((_, element) => {
+    const href = $(element).attr("href")
+    const dateText = $(element)
+      .find(".fs-match__meta span")
+      .first()
+      .text()
+      .trim()
+    const teams = $(element)
+      .find(".fs-team")
+      .toArray()
+      .map((team) => $(team).find("span").last().text().trim())
+    const date = fbcDateKey(dateText)
+    if (!href || !date || teams.length < 2) return
+    map.set(`${normalize(teams[0])}|${normalize(teams[1])}|${date}`, href)
+  })
+  fbcIndexCache.set(leagueId, { at: Date.now(), map })
+  return map
+}
+
+const fbcEventCache = new Map<string, { at: number; events: FbcEvent[] }>()
+
+async function fbcEvents(header: SwissGameHeader) {
+  if (![9380, 9534].includes(header.LeagueID)) return null
+  const key = `${normalize(header.HomeTeamClubName)}|${normalize(header.AwayTeamClubName)}|${dateKey(header.GameTime, "Europe/Zurich")}`
+  const href = (await fbcIndex(header.LeagueID)).get(key)
+  if (!href) return null
+  const cached = fbcEventCache.get(href)
+  if (cached && Date.now() - cached.at < 5_000) return cached.events
+  const response = await fetch(href, {
+    headers: FBC_HEADERS,
+    cache: "no-store",
+  })
+  if (!response.ok) return null
+  const html = await response.text()
+  const encoded = html.match(/data-events-b64="([^"]+)"/)?.[1]
+  if (!encoded) return null
+  const events = JSON.parse(
+    Buffer.from(encoded, "base64").toString("utf8")
+  ) as FbcEvent[]
+  fbcEventCache.set(href, { at: Date.now(), events })
+  return events
+}
+
+function normalizeFbcEvents(events: FbcEvent[]): LiveEvent[] {
+  return events.map((event, index) => {
+    const score = event.score?.match(/^(\d+):(\d+)$/)
+    const kind: LiveEventKind =
+      event.event_kind === "goal"
+        ? "goal"
+        : event.event_kind === "penalty"
+          ? "penalty"
+          : "period"
+    const label =
+      event.event_kind === "goal"
+        ? event.tag === "penalty_shot"
+          ? "Straffmål"
+          : "Mål"
+        : event.event_kind === "penalty"
+          ? event.tag?.includes("5")
+            ? "Utvisning 5 min"
+            : event.tag?.includes("10")
+              ? "Utvisning 10 min"
+              : "Utvisning 2 min"
+          : event.title.includes("End of regulation")
+            ? "Ordinarie tid slut"
+            : event.title.includes("End")
+              ? "Periodslut"
+              : event.title
+    const detail =
+      event.event_kind === "goal"
+        ? [
+            event.title !== "Unknown" ? event.title : null,
+            event.assist && `Assist: ${event.assist}`,
+          ]
+            .filter(Boolean)
+            .join(" · ") || null
+        : event.event_kind === "penalty"
+          ? event.assist || null
+          : null
+    return {
+      id: `fbc-${index}`,
+      kind,
+      label,
+      detail,
+      team:
+        event.side === "home"
+          ? "home"
+          : event.side === "away"
+            ? "away"
+            : "neutral",
+      period: event.period || 1,
+      periodName: swissPeriodName(event.period || 1),
+      time: event.minute,
+      score: score ? { home: Number(score[1]), away: Number(score[2]) } : null,
+    }
+  })
 }
 
 function swissPeriodName(period: number) {
@@ -270,10 +439,27 @@ function toSummary(game: SwissGame): LiveMatchSummary {
 
 function toLiveMatch(
   header: SwissGameHeader,
-  timeline: SwissTimelineItem[]
+  timeline: SwissTimelineItem[],
+  fbc: FbcEvent[] | null
 ): LiveMatch {
   const summary = toSummary(header as SwissGame)
-  const events = normalizeEvents(header, timeline)
+  const events = fbc?.length
+    ? normalizeFbcEvents(fbc)
+    : normalizeEvents(header, timeline)
+  if (fbc?.length && summary.status === "finished") {
+    const finalEvent = events.at(-1)
+    events.push({
+      id: "fbc-final",
+      kind: "period",
+      label: "Matchens slut",
+      detail: null,
+      team: "neutral",
+      period: finalEvent?.period ?? 5,
+      periodName: finalEvent?.periodName ?? "Straffar",
+      time: "Slut",
+      score: null,
+    })
+  }
   const last = events.at(-1)
   const period = last?.period ?? header.Period ?? 0
   const clock = last?.time ?? "0:00"
@@ -282,11 +468,13 @@ function toLiveMatch(
     venue: header.ArenaName?.trim() || null,
     period,
     periodName: period ? swissPeriodName(period) : "",
-    inBreak: last?.label === "Periodslut",
+    inBreak:
+      summary.status === "live" &&
+      (last?.label === "Periodslut" || last?.label === "Ordinarie tid slut"),
     clock,
     lastEventAt: header.LatestEventTime,
     events,
-    eventsNote: "Visar de senaste händelserna.",
+    eventsNote: fbc?.length ? null : "Visar de senaste händelserna.",
   }
 }
 
@@ -358,7 +546,15 @@ export async function getSwissLiveMatch(id: string): Promise<LiveMatch> {
       SharedSecret: "THIS_IS_MAGIC_VALUE",
     }),
   ])
-  const value = toLiveMatch(view.GameHeaderInfo, timeline.TimelineBlurbs ?? [])
+  const fbc = await fbcEvents(view.GameHeaderInfo).catch((error) => {
+    console.error("swiss detailed events failed", id, error)
+    return null
+  })
+  const value = toLiveMatch(
+    view.GameHeaderInfo,
+    timeline.TimelineBlurbs ?? [],
+    fbc
+  )
   detailCache.set(id, { at: Date.now(), value })
   return value
 }
