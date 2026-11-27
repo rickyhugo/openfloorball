@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Moon, Sun } from "@phosphor-icons/react"
+import { GithubLogo, Moon, Sun } from "@phosphor-icons/react"
 import { SearchBox } from "@/components/search-box"
 import {
   Sidebar,
@@ -94,8 +94,20 @@ export function AppShell({
             >
               OpenFloorball
             </a>
-            <div className="ml-auto w-full max-w-sm min-w-0">
-              <SearchBox />
+            <div className="ml-auto flex min-w-0 items-center gap-2">
+              <div className="w-full max-w-sm min-w-0">
+                <SearchBox />
+              </div>
+              <a
+                href="https://github.com/rickyhugo/openfloorball"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="Källkod på GitHub"
+                title="Källkod på GitHub"
+                className="inline-flex size-9 shrink-0 items-center justify-center border text-muted-foreground transition-colors hover:bg-foreground hover:text-background"
+              >
+                <GithubLogo size={18} weight="fill" />
+              </a>
             </div>
           </header>
           {children}
