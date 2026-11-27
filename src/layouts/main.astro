@@ -22,27 +22,49 @@ const competitions = allCompetitions.filter(
   (row) => row.seasonLabel === latestSeason
 )
 const countries = await listCountries(latestSeason)
-const sslMen = competitions.find(
-  (row) => row.name.includes("SSL") && row.name.includes("Herrar")
-)
-const sslWomen = competitions.find(
-  (row) => row.name.includes("SSL") && row.name.includes("Damer")
-)
-const allsMen = competitions.find((row) =>
-  row.name.includes("Allsvenskan Herrar")
-)
-const allsWomen = competitions.find((row) =>
-  row.name.includes("Allsvenskan Damer")
-)
 
-const countryGroups: NavGroup[] = countries.map((country) => ({
-  label: country.name,
-  items: [
-    { label: "Herrar", href: `/serier?land=${country.id}&kon=men` },
-    { label: "Damer", href: `/serier?land=${country.id}&kon=women` },
+const topPattern: Record<string, RegExp> = {
+  SE: /SSL/,
+  FI: /F-Liiga/,
+  CH: /L-UPL/,
+}
+
+function leagueLabel(name: string, gender: string) {
+  const genderLabel = gender === "men" ? "Herrar" : "Damer"
+  if (/SSL/i.test(name)) return `SSL ${genderLabel}`
+  if (/F-Liiga/i.test(name)) return `F-Liiga ${genderLabel}`
+  if (/L-UPL/i.test(name)) return `L-UPL ${genderLabel}`
+  return name
+}
+
+const countryGroups: NavGroup[] = countries.flatMap((country) => {
+  const inCountry = competitions.filter((row) => row.countryId === country.id)
+  const pattern = topPattern[country.id]
+  const pick = (gender: "men" | "women") => {
+    const rows = inCountry.filter((row) => row.gender === gender)
+    return pattern
+      ? (rows.find((row) => pattern.test(row.name)) ?? rows[0])
+      : rows[0]
+  }
+  const men = pick("men")
+  const women = pick("women")
+  const items = [
+    men
+      ? {
+          label: leagueLabel(men.name, "men"),
+          href: `/serie/${men.externalId}`,
+        }
+      : null,
+    women
+      ? {
+          label: leagueLabel(women.name, "women"),
+          href: `/serie/${women.externalId}`,
+        }
+      : null,
     { label: "Alla serier", href: `/serier?land=${country.id}` },
-  ],
-}))
+  ].filter((item): item is { label: string; href: string } => item !== null)
+  return items.length ? [{ label: country.name, items }] : []
+})
 
 const nav: NavGroup[] = [
   {
@@ -51,29 +73,10 @@ const nav: NavGroup[] = [
       { label: "Start", href: "/" },
       { label: "Live", href: "/live" },
       { label: "Alla serier", href: "/serier" },
+      { label: "Om sidan", href: "/om" },
     ],
   },
   ...countryGroups,
-  {
-    label: "Toppserier",
-    items: [
-      sslMen
-        ? { label: "SSL Herrar", href: `/serie/${sslMen.externalId}` }
-        : null,
-      sslWomen
-        ? { label: "SSL Damer", href: `/serie/${sslWomen.externalId}` }
-        : null,
-      allsMen
-        ? { label: "Allsvenskan Herrar", href: `/serie/${allsMen.externalId}` }
-        : null,
-      allsWomen
-        ? {
-            label: "Allsvenskan Damer",
-            href: `/serie/${allsWomen.externalId}`,
-          }
-        : null,
-    ].filter((item): item is { label: string; href: string } => item !== null),
-  },
 ]
 ---
 
@@ -99,7 +102,11 @@ const nav: NavGroup[] = [
     <meta name="theme-color" content="#ffffff" />
   </head>
   <body class="min-h-svh">
-    <AppShell client:load nav={nav}>
+    <AppShell
+      client:load
+      nav={nav}
+      location={Astro.url.pathname + Astro.url.search}
+    >
       <slot />
     </AppShell>
   </body>

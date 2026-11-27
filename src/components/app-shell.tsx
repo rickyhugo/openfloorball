@@ -1,5 +1,13 @@
 import * as React from "react"
-import { GithubLogo, Moon, Sun } from "@phosphor-icons/react"
+import {
+  Broadcast,
+  GithubLogo,
+  House,
+  Info,
+  Moon,
+  Rows,
+  Sun,
+} from "@phosphor-icons/react"
 import { SearchBox } from "@/components/search-box"
 import {
   Sidebar,
@@ -38,12 +46,28 @@ function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-pressed={dark}
-      className="flex w-full items-center gap-2 px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      title={dark ? "Byt till ljust läge" : "Byt till mörkt läge"}
+      aria-label={dark ? "Byt till ljust läge" : "Byt till mörkt läge"}
+      className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     >
       {dark ? <Sun size={16} /> : <Moon size={16} />}
-      {dark ? "Ljust läge" : "Mörkt läge"}
     </button>
   )
+}
+
+const SECTION_ICONS: Record<string, React.ElementType> = {
+  Start: House,
+  Live: Broadcast,
+  "Alla serier": Rows,
+  "Om sidan": Info,
+}
+
+function isItemActive(location: string, href: string) {
+  const [path] = location.split("?")
+  if (href === "/") return path === "/"
+  const [hrefPath, hrefSearch] = href.split("?")
+  if (hrefSearch) return path === hrefPath && location.includes(hrefSearch)
+  return path === hrefPath || path.startsWith(hrefPath + "/")
 }
 
 export type NavGroup = {
@@ -53,11 +77,37 @@ export type NavGroup = {
 
 export function AppShell({
   nav,
+  location,
   children,
 }: {
   nav: NavGroup[]
+  location: string
   children: React.ReactNode
 }) {
+  const [liveCount, setLiveCount] = React.useState<number | null>(null)
+
+  React.useEffect(() => {
+    let cancelled = false
+    async function check() {
+      try {
+        const response = await fetch("/api/live", { cache: "no-store" })
+        if (!response.ok) return
+        const data = (await response.json()) as {
+          matches: { status: string }[]
+        }
+        if (!cancelled) {
+          setLiveCount(data.matches.filter((m) => m.status === "live").length)
+        }
+      } catch {
+        // the next navigation retries
+      }
+    }
+    check()
+    return () => {
+      cancelled = true
+    }
+  }, [location])
+
   return (
     <TooltipProvider>
       <SidebarProvider>
@@ -67,19 +117,58 @@ export function AppShell({
               <SidebarGroup key={group.label}>
                 <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
                 <SidebarMenu>
-                  {group.items.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild>
-                        <a href={item.href}>{item.label}</a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {group.items.map((item) => {
+                    const Icon = SECTION_ICONS[item.label]
+                    const liveHere =
+                      item.href === "/live" && (liveCount ?? 0) > 0
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isItemActive(location, item.href)}
+                        >
+                          <a href={item.href}>
+                            {Icon ? <Icon size={16} /> : null}
+                            <span className="flex-1">{item.label}</span>
+                            {liveHere ? (
+                              <span className="flex items-center gap-1 text-[0.65rem] font-medium text-emerald-600">
+                                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                {liveCount}
+                              </span>
+                            ) : null}
+                          </a>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
                 </SidebarMenu>
               </SidebarGroup>
             ))}
           </SidebarContent>
           <SidebarFooter>
-            <ThemeToggle />
+            <div className="flex items-center gap-1">
+              <a
+                href="/om"
+                title="Om OpenFloorball"
+                aria-label="Om OpenFloorball"
+                className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <Info size={16} />
+              </a>
+              <a
+                href="https://github.com/rickyhugo/openfloorball"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="Källkod på GitHub"
+                title="Källkod på GitHub"
+                className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <GithubLogo size={16} weight="fill" />
+              </a>
+              <div className="ml-auto">
+                <ThemeToggle />
+              </div>
+            </div>
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
@@ -98,16 +187,6 @@ export function AppShell({
               <div className="w-full max-w-sm min-w-0">
                 <SearchBox />
               </div>
-              <a
-                href="https://github.com/rickyhugo/openfloorball"
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="Källkod på GitHub"
-                title="Källkod på GitHub"
-                className="inline-flex size-9 shrink-0 items-center justify-center border text-muted-foreground transition-colors hover:bg-foreground hover:text-background"
-              >
-                <GithubLogo size={18} weight="fill" />
-              </a>
             </div>
           </header>
           {children}

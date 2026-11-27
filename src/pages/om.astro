@@ -1,0 +1,108 @@
+---
+import Layout from "@/layouts/main.astro"
+import { PageHeader } from "@/components/page-header"
+
+export const prerender = false
+---
+
+<Layout
+  title="Om OpenFloorball"
+  description="Om OpenFloorball, datakällor och öppen källkod."
+>
+  <div class="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
+    <PageHeader
+      title="Om OpenFloorball"
+      description="Fri innebandystatistik från Sverige, Finland och Schweiz."
+    />
+
+    <section class="mt-10">
+      <h2 class="font-heading text-xl font-semibold">Vad som visas</h2>
+      <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
+        OpenFloorball samlar tabeller, spelstatistik och matchhändelser för
+        innebandyns ligor i Sverige, Finland och Schweiz. Resultat länkar till
+        en detaljerad tidslinje med mål, assist och utvisningar på exakta
+        tidpunkter. Live-sidans matcher uppdateras löpande så länge källorna
+        rapporterar.
+      </p>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="font-heading text-xl font-semibold">Datakällor</h2>
+      <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
+        Allt innehåll kommer från gratis och offentliga källor. Sidan visar
+        aldrig påhittad data, och där en källa saknar uppgifter visas det
+        istället för att gissa.
+      </p>
+      <ul class="mt-4 divide-y border-y text-sm">
+        <li class="py-3">
+          <a
+            href="https://stats.innebandy.se"
+            target="_blank"
+            rel="noreferrer noopener"
+            class="font-medium hover:underline"
+          >
+            stats.innebandy.se
+          </a>
+          <span class="block text-xs text-muted-foreground">
+            Sverige · tabeller, spelarstatistik, livedata
+          </span>
+        </li>
+        <li class="py-3">
+          <a
+            href="https://fliiga.com"
+            target="_blank"
+            rel="noreferrer noopener"
+            class="font-medium hover:underline"
+          >
+            fliiga.com
+          </a>
+          <span class="block text-xs text-muted-foreground">
+            Finland · tabeller och spelarstatistik
+          </span>
+        </li>
+        <li class="py-3">
+          <a
+            href="https://myapp.swissunihockey.ch"
+            target="_blank"
+            rel="noreferrer noopener"
+            class="font-medium hover:underline"
+          >
+            swiss unihockey
+          </a>
+          <span class="block text-xs text-muted-foreground">
+            Schweiz · tabeller, spelarstatistik och live
+          </span>
+        </li>
+        <li class="py-3">
+          <a
+            href="https://stats.floorballconnect.com"
+            target="_blank"
+            rel="noreferrer noopener"
+            class="font-medium hover:underline"
+          >
+            FloorballConnect
+          </a>
+          <span class="block text-xs text-muted-foreground">
+            Schweiz · fulla händelsetidslinjer
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="font-heading text-xl font-semibold">Öppen källkod</h2>
+      <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
+        Hela siten är öppen källkod. Rapportera buggar, föreslå funktioner eller
+        bygg vidare själv.
+      </p>
+      <a
+        href="https://github.com/rickyhugo/openfloorball"
+        target="_blank"
+        rel="noreferrer noopener"
+        class="mt-4 inline-flex h-9 items-center border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
+      >
+        github.com/rickyhugo/openfloorball
+      </a>
+    </section>
+  </div>
+</Layout>
