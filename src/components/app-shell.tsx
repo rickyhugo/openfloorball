@@ -7,7 +7,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
@@ -63,15 +62,7 @@ export function AppShell({
     <TooltipProvider>
       <SidebarProvider>
         <Sidebar collapsible="offcanvas">
-          <SidebarHeader>
-            <a
-              href="/"
-              className="px-2 py-1.5 font-heading text-lg font-semibold tracking-tight"
-            >
-              OpenFloorball
-            </a>
-          </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="pt-3">
             {nav.map((group) => (
               <SidebarGroup key={group.label}>
                 <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
@@ -97,6 +88,12 @@ export function AppShell({
               title="Visa eller dölj meny"
               aria-label="Visa eller dölj meny"
             />
+            <a
+              href="/"
+              className="shrink-0 font-heading text-sm font-semibold tracking-tight sm:text-base"
+            >
+              OpenFloorball
+            </a>
             <div className="ml-auto w-full max-w-sm min-w-0">
               <SearchBox />
             </div>
