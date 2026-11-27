@@ -45,6 +45,14 @@ const leaderboards = [
     rows: data.leaders.points,
     value: (leader: (typeof data.leaders.points)[number]) => leader.points,
   },
+  {
+    label: "Utvisningsliga",
+    unit: "Utv",
+    rows: data.leaders.penalties.filter((leader) => leader.penaltyMinutes > 0),
+    note: "Schweiz saknar utvisningsminuter i den fria datan.",
+    value: (leader: (typeof data.leaders.penalties)[number]) =>
+      leader.penaltyMinutes,
+  },
 ]
 ---
 
@@ -213,7 +221,7 @@ const leaderboards = [
           Toppserier · alla länder
         </span>
       </div>
-      <div class="mt-4 grid gap-6 sm:grid-cols-3">
+      <div class="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {leaderboards.map((board) => (
           <div class="min-w-0">
             <div class="flex items-baseline justify-between gap-3">
@@ -244,6 +252,9 @@ const leaderboards = [
                 ))}
               </ul>
             </div>
+            {"note" in board && board.note ? (
+              <p class="mt-2 text-xs text-muted-foreground">{board.note}</p>
+            ) : null}
           </div>
         ))}
       </div>

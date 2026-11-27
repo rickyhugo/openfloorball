@@ -47,6 +47,7 @@ export type LandingLeader = {
   goals: number
   assists: number
   points: number
+  penaltyMinutes: number
 }
 
 type BoardRow = {
@@ -148,7 +149,8 @@ export async function getLanding() {
     select p.name as "playerName", p.external_id as "playerExternalId",
            cl.name as "clubName", co.name as "countryName",
            c.name as "competitionName",
-           pcs.goals, pcs.assists, pcs.points
+           pcs.goals, pcs.assists, pcs.points,
+           pcs.penalty_minutes as "penaltyMinutes"
     from player_competition_stat pcs
     join player p on p.id = pcs.player_id
     join team_season ts on ts.id = pcs.team_season_id
@@ -174,10 +176,13 @@ export async function getLanding() {
       current.goals += row.goals
       current.assists += row.assists
       current.points += row.points
+      current.penaltyMinutes += row.penaltyMinutes
     }
   }
 
-  const topByCountry = (metric: "goals" | "assists" | "points") => {
+  const topByCountry = (
+    metric: "goals" | "assists" | "points" | "penaltyMinutes"
+  ) => {
     const byCountry = new Map<string, LandingLeader[]>()
     for (const row of combined.values()) {
       const list = byCountry.get(row.countryName) ?? []
@@ -213,6 +218,7 @@ export async function getLanding() {
       goals: topByCountry("goals"),
       assists: topByCountry("assists"),
       points: topByCountry("points"),
+      penalties: topByCountry("penaltyMinutes"),
     },
   }
 }

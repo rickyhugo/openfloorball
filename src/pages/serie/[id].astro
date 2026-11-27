@@ -91,6 +91,21 @@ const leaderboards = [
       .slice(0, 10),
     value: (row: (typeof data.leaders)[number]) => row.points,
   },
+  {
+    label: "Utvisningsliga",
+    unit: "Utv",
+    empty: "Utvisningsminuter saknas i den fria datan för denna serie.",
+    rows: [...data.leaders]
+      .filter((row) => row.penaltyMinutes > 0)
+      .sort(
+        (a, b) =>
+          b.penaltyMinutes - a.penaltyMinutes ||
+          a.matches - b.matches ||
+          a.playerName.localeCompare(b.playerName, "sv")
+      )
+      .slice(0, 10),
+    value: (row: (typeof data.leaders)[number]) => row.penaltyMinutes,
+  },
 ]
 const sourceUrl =
   data.source === "fliiga"
@@ -186,7 +201,7 @@ const sourceUrl =
     {data.leaders.length > 0 ? (
       <section class="mt-14">
         <h2 class="font-heading text-2xl font-semibold">Spelarstatistik</h2>
-        <div class="mt-4 grid gap-8 lg:grid-cols-3">
+        <div class="mt-4 grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
           {leaderboards.map((board) => (
             <div class="min-w-0">
               <div class="flex items-baseline justify-between gap-3">
@@ -195,38 +210,46 @@ const sourceUrl =
                 </h3>
                 <span class="text-xs text-muted-foreground">{board.unit}</span>
               </div>
-              <div class="mt-2 overflow-x-auto border-y">
-                <table class="w-full text-sm">
-                  <thead>
-                    <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
-                      <th class="py-2 pr-3 font-medium">Spelare</th>
-                      <th class="py-2 pl-3 text-right font-medium">
-                        {board.unit}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {board.rows.map((row) => (
-                      <tr class="border-b border-border/60">
-                        <td class="min-w-0 py-2 pr-3">
-                          <a
-                            href={`/spelare/${row.playerExternalId}`}
-                            class="block truncate hover:underline"
-                          >
-                            {row.playerName}
-                          </a>
-                          <span class="block truncate text-xs text-muted-foreground">
-                            {row.clubName}
-                          </span>
-                        </td>
-                        <td class="py-2 pl-3 text-right font-semibold tabular-nums">
-                          {board.value(row)}
-                        </td>
+              {board.rows.length > 0 ? (
+                <div class="mt-2 overflow-x-auto border-y">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
+                        <th class="py-2 pr-3 font-medium">Spelare</th>
+                        <th class="py-2 pl-3 text-right font-medium">
+                          {board.unit}
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {board.rows.map((row) => (
+                        <tr class="border-b border-border/60">
+                          <td class="min-w-0 py-2 pr-3">
+                            <a
+                              href={`/spelare/${row.playerExternalId}`}
+                              class="block truncate hover:underline"
+                            >
+                              {row.playerName}
+                            </a>
+                            <span class="block truncate text-xs text-muted-foreground">
+                              {row.clubName}
+                            </span>
+                          </td>
+                          <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                            {board.value(row)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p class="mt-2 border-y py-3 text-sm text-muted-foreground">
+                  {"empty" in board && board.empty
+                    ? board.empty
+                    : "Inga spelare registrerade."}
+                </p>
+              )}
             </div>
           ))}
         </div>
