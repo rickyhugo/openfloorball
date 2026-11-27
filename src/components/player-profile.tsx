@@ -98,6 +98,46 @@ function savePercentage(
   )
 }
 
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  children: React.ReactNode
+}) {
+  return (
+    <label className="flex w-full flex-col gap-1 text-xs text-muted-foreground sm:w-64">
+      <span className="font-medium tracking-wider uppercase">{label}</span>
+      <span className="relative block">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-full appearance-none border bg-background pr-9 pl-3 text-sm text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+        >
+          {children}
+        </select>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-muted-foreground"
+        >
+          <path
+            d="m4 6 4 4 4-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="square"
+          />
+        </svg>
+      </span>
+    </label>
+  )
+}
+
 function StatGrid({
   items,
   columns = 5,
@@ -476,37 +516,23 @@ export function PlayerProfile({
         </div>
       </header>
 
-      <section className="flex flex-col gap-3 border-b py-5 sm:flex-row sm:items-end">
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          <span className="font-medium tracking-wider uppercase">Säsong</span>
-          <select
-            value={season}
-            onChange={(event) => changeSeason(event.target.value)}
-            className="h-9 min-w-40 border bg-background px-2 text-sm text-foreground"
-          >
-            <option value={ALL}>Alla säsonger</option>
-            {seasons.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          <span className="font-medium tracking-wider uppercase">Serie</span>
-          <select
-            value={league}
-            onChange={(event) => changeLeague(event.target.value)}
-            className="h-9 max-w-full min-w-52 border bg-background px-2 text-sm text-foreground"
-          >
-            <option value={ALL}>Alla serier</option>
-            {seasonLeagues.map((item) => (
-              <option key={item.key} value={item.key}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <section className="flex flex-col gap-3 border-b py-5 sm:flex-row">
+        <FilterSelect label="Säsong" value={season} onChange={changeSeason}>
+          <option value={ALL}>Alla säsonger</option>
+          {seasons.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect label="Serie" value={league} onChange={changeLeague}>
+          <option value={ALL}>Alla serier</option>
+          {seasonLeagues.map((item) => (
+            <option key={item.key} value={item.key}>
+              {item.label}
+            </option>
+          ))}
+        </FilterSelect>
       </section>
 
       {skaterRows.length > 0 ? (
