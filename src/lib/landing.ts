@@ -2,14 +2,6 @@ import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL ?? "")
 
-type FeaturedCompetition = {
-  id: string
-  externalId: string
-  name: string
-  categoryName: string | null
-  gender: string
-}
-
 export type LandingGame = {
   externalId: string
   startsAt: Date
@@ -20,6 +12,7 @@ export type LandingGame = {
   away: string
   competition: string
   competitionExternalId: string
+  countryName: string
 }
 
 export type LandingStanding = {
@@ -30,12 +23,40 @@ export type LandingStanding = {
   points: number
 }
 
+export type LandingBoardCompetition = {
+  name: string
+  externalId: string
+  standings: LandingStanding[]
+}
+
+export type LandingBoard = {
+  countryId: string
+  countryName: string
+  men?: LandingBoardCompetition
+  women?: LandingBoardCompetition
+  other?: LandingBoardCompetition
+}
+
 export type LandingLeader = {
   playerName: string
   playerExternalId: string
   clubName: string
+  countryName: string
   goals: number
   assists: number
+  points: number
+}
+
+type BoardRow = {
+  countryId: string
+  countryName: string
+  gender: string
+  competitionName: string
+  competitionExternalId: string
+  position: number
+  teamExternalId: string
+  teamName: string
+  played: number
   points: number
 }
 
@@ -47,106 +68,115 @@ export async function getLanding() {
   const label = season.label
 
   const latestGames = (await sql`
-    select g.external_id as "externalId", g.starts_at as "startsAt", g.home_score as "homeScore",
-           g.away_score as "awayScore", g.decided_by as "decidedBy",
-           hc.name as home, ac.name as away, c.name as competition,
-           c.external_id as "competitionExternalId"
-    from game g
-    join season s on s.id = g.season_id
-    join competition c on c.id = s.competition_id
-    join team_season ht on ht.id = g.home_team_season_id
-    join club hc on hc.id = ht.club_id
-    join team_season at on at.id = g.away_team_season_id
-    join club ac on ac.id = at.club_id
-    where s.label = ${label} and g.status = 'finished'
-    order by g.starts_at desc
-    limit 8
+    with recent as (
+      select g.external_id as "externalId", g.starts_at as "startsAt",
+             g.home_score as "homeScore", g.away_score as "awayScore",
+             g.decided_by as "decidedBy", hc.name as home, ac.name as away,
+             c.name as competition, c.external_id as "competitionExternalId",
+             co.name as "countryName",
+             row_number() over (
+               partition by co.id order by g.starts_at desc
+             ) as country_rank
+      from game g
+      join season s on s.id = g.season_id
+      join competition c on c.id = s.competition_id
+      join country co on co.id = c.country_id
+      join team_season ht on ht.id = g.home_team_season_id
+      join club hc on hc.id = ht.club_id
+      join team_season at on at.id = g.away_team_season_id
+      join club ac on ac.id = at.club_id
+      where s.label = ${label} and g.status = 'finished'
+    )
+    select "externalId", "startsAt", "homeScore", "awayScore", "decidedBy",
+           home, away, competition, "competitionExternalId", "countryName"
+    from recent
+    where country_rank <= 3
+    order by "startsAt" desc
+    limit 9
   `) as Array<LandingGame>
 
-  const competitions = (await sql`
-    select c.id, c.external_id as "externalId", c.name, c.category_name as "categoryName", c.gender
+  const boardRows = (await sql`
+    select c.country_id as "countryId", co.name as "countryName",
+           c.gender, c.name as "competitionName",
+           c.external_id as "competitionExternalId",
+           tss.position, ts.external_id as "teamExternalId",
+           cl.name as "teamName", tss.played, tss.points
+    from competition c
+    join country co on co.id = c.country_id
+    join season s on s.competition_id = c.id
+    join team_season_stat tss on tss.season_id = s.id
+    join team_season ts on ts.id = tss.team_season_id
+    join club cl on cl.id = ts.club_id
+    where s.label = ${label}
+      and tss.position <= 3
+      and (
+        c.name ilike '%SSL%'
+        or c.name ilike '%F-Liiga%'
+        or c.name ilike '%L-UPL%'
+      )
+    order by c.country_id, c.gender, c.name, tss.position
+  `) as Array<BoardRow>
+
+  const boards = new Map<string, LandingBoard>()
+  for (const row of boardRows) {
+    const board =
+      boards.get(row.countryId) ??
+      ({
+        countryId: row.countryId,
+        countryName: row.countryName,
+      } satisfies LandingBoard)
+    const key =
+      row.gender === "men" || row.gender === "women" ? row.gender : "other"
+    board[key] ??= {
+      name: row.competitionName,
+      externalId: row.competitionExternalId,
+      standings: [],
+    }
+    board[key]!.standings.push({
+      position: row.position,
+      teamExternalId: row.teamExternalId,
+      teamName: row.teamName,
+      played: row.played,
+      points: row.points,
+    })
+    boards.set(row.countryId, board)
+  }
+
+  const [sslMen] = (await sql`
+    select c.external_id as "externalId"
     from competition c
     join season s on s.competition_id = c.id
     where s.label = ${label}
-      and (c.name ilike '%SSL%' or c.name ilike '%Allsvenskan%')
+      and c.gender = 'men'
+      and c.name ilike '%SSL%'
     order by c.name
-  `) as Array<FeaturedCompetition>
+    limit 1
+  `) as Array<{ externalId: string }>
 
-  const pick = (gender: string, needle: string) =>
-    competitions.find(
-      (competition) =>
-        competition.gender === gender &&
-        competition.name.toLowerCase().includes(needle.toLowerCase())
-    )
-
-  const definitions = [
-    {
-      key: "ssl-men",
-      label: "SSL Herrar",
-      competition: pick("men", "SSL") ?? pick("men", "Svenska Superligan"),
-    },
-    {
-      key: "ssl-women",
-      label: "SSL Damer",
-      competition: pick("women", "SSL") ?? pick("women", "Svenska Superligan"),
-    },
-    {
-      key: "allsvenskan-men",
-      label: "Allsvenskan Herrar",
-      competition: pick("men", "Allsvenskan"),
-    },
-    {
-      key: "allsvenskan-women",
-      label: "Allsvenskan Damer",
-      competition: pick("women", "Allsvenskan"),
-    },
-  ].filter(
-    (
-      definition
-    ): definition is {
-      key: string
-      label: string
-      competition: FeaturedCompetition
-    } => Boolean(definition.competition)
-  )
-
-  const featured: Array<{
-    key: string
-    label: string
-    competition: FeaturedCompetition
-    standings: LandingStanding[]
-  }> = []
-  for (const definition of definitions) {
-    const standings = (await sql`
-      select tss.position, ts.external_id as "teamExternalId", cl.name as "teamName", tss.played, tss.points
-      from team_season_stat tss
-      join season s on s.id = tss.season_id
-      join competition c on c.id = s.competition_id
-      join team_season ts on ts.id = tss.team_season_id
-      join club cl on cl.id = ts.club_id
-      where c.external_id = ${definition.competition.externalId} and s.label = ${label}
-      order by tss.position
-      limit 5
-    `) as Array<LandingStanding>
-    featured.push({ ...definition, standings })
-  }
-
-  const sslMen = featured.find((entry) => entry.key === "ssl-men")?.competition
   const leaders = sslMen
     ? ((await sql`
         select p.name as "playerName", p.external_id as "playerExternalId",
-               cl.name as "clubName", pcs.goals, pcs.assists, pcs.points
+               cl.name as "clubName", co.name as "countryName",
+               pcs.goals, pcs.assists, pcs.points
         from player_competition_stat pcs
         join player p on p.id = pcs.player_id
         join team_season ts on ts.id = pcs.team_season_id
         join club cl on cl.id = ts.club_id
         join season s on s.id = pcs.season_id
         join competition c on c.id = s.competition_id
+        join country co on co.id = c.country_id
         where s.label = ${label} and c.external_id = ${sslMen.externalId}
         order by pcs.points desc, pcs.goals desc
         limit 5
       `) as Array<LandingLeader>)
     : []
 
-  return { seasonLabel: label, latestGames, featured, leaders }
+  return {
+    seasonLabel: label,
+    latestGames,
+    boards: [...boards.values()].sort((a, b) =>
+      a.countryName.localeCompare(b.countryName, "sv")
+    ),
+    leaders,
+  }
 }

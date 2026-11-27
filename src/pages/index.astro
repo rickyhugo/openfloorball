@@ -2,15 +2,6 @@
 import Layout from "@/layouts/main.astro"
 import { getLanding } from "@/lib/landing"
 import { listCountries } from "@/lib/db/queries"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
 export const prerender = false
 
@@ -28,22 +19,34 @@ function formatDate(value: Date | string) {
   return dateFormat.format(value instanceof Date ? value : new Date(value))
 }
 
-const sslMen = data.featured.find((entry) => entry.key === "ssl-men")
-const sslWomen = data.featured.find((entry) => entry.key === "ssl-women")
-const featured = [sslMen, sslWomen].filter(
-  (entry): entry is NonNullable<typeof entry> => Boolean(entry)
-)
+const boards = new Map(data.boards.map((board) => [board.countryId, board]))
+const genders = [
+  { key: "men" as const, label: "Herrar" },
+  { key: "women" as const, label: "Damer" },
+]
 ---
 
 <Layout
   title="Innebandy, tabeller och resultat"
-  description="Tabeller, resultat och statistik."
+  description="Tabeller, resultat och live från Sverige, Finland och Schweiz."
 >
   <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
-    <header class="border-b pb-6">
-      <h1 class="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-        Innebandy
-      </h1>
+    <header class="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
+          Innebandy
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Tabeller, resultat och live från Sverige, Finland och Schweiz. Välj
+          land för att börja.
+        </p>
+      </div>
+      <a
+        href="/live"
+        class="inline-flex h-9 shrink-0 items-center justify-center border px-4 text-sm font-medium transition-colors hover:bg-muted"
+      >
+        Live
+      </a>
     </header>
 
     <section class="mt-8">
@@ -56,145 +59,161 @@ const featured = [sslMen, sslWomen].filter(
           Alla serier
         </a>
       </div>
-      <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {countries.map((country) => (
-          <a
-            href={`/serier?land=${country.id}`}
-            class="rounded-xl border p-4 transition-colors hover:bg-muted"
-          >
-            <p class="font-heading text-xl font-semibold">{country.name}</p>
-            <p class="mt-1 text-sm text-muted-foreground">
-              {country.competitions} serier
-            </p>
-          </a>
-        ))}
-      </div>
-    </section>
 
-    <section class="mt-10">
-      <h2 class="font-heading text-2xl font-semibold">Toppserier</h2>
-      <div class="mt-4 grid gap-4 lg:grid-cols-2">
-        {featured.map((entry) => (
-          <Card>
-            <CardHeader>
-              <div class="flex items-center justify-between gap-3">
-                <CardTitle className="font-heading text-xl">
-                  {entry.label}
-                </CardTitle>
+      <div class="mt-4 grid gap-4 lg:grid-cols-3">
+        {countries.map((country) => {
+          const board = boards.get(country.id)
+          return (
+            <article class="flex flex-col border p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <a
+                    href={`/serier?land=${country.id}`}
+                    class="hover:underline"
+                  >
+                    <h3 class="font-heading text-2xl font-semibold">
+                      {country.name}
+                    </h3>
+                  </a>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    {country.competitions} serier
+                  </p>
+                </div>
+              </div>
+
+              <div class="mt-5 grid gap-5">
+                {genders.map((gender) => {
+                  const competition = board?.[gender.key]
+                  if (!competition) return null
+                  return (
+                    <div>
+                      <div class="flex items-baseline justify-between gap-2">
+                        <span class="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
+                          {gender.label}
+                        </span>
+                        <a
+                          href={`/serie/${competition.externalId}`}
+                          class="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+                          title={competition.name}
+                        >
+                          {competition.name}
+                        </a>
+                      </div>
+                      <ol class="mt-2 divide-y border-y">
+                        {competition.standings.map((row) => (
+                          <li>
+                            <a
+                              href={`/lag/${competition.externalId}/${row.teamExternalId}`}
+                              class="grid grid-cols-[1.25rem_1fr_auto] items-baseline gap-2 py-1.5 text-sm hover:bg-muted/50"
+                            >
+                              <span class="text-xs text-muted-foreground tabular-nums">
+                                {row.position}
+                              </span>
+                              <span class="truncate font-medium">
+                                {row.teamName}
+                              </span>
+                              <span class="font-semibold tabular-nums">
+                                {row.points}
+                              </span>
+                            </a>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div class="mt-auto flex flex-wrap gap-x-4 gap-y-1 pt-5 text-xs">
                 <a
-                  href={`/serie/${entry.competition.externalId}`}
-                  class="text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
+                  href={`/serier?land=${country.id}&kon=men`}
+                  class="text-muted-foreground hover:text-foreground hover:underline"
                 >
-                  Hela tabellen
+                  Herrar
+                </a>
+                <a
+                  href={`/serier?land=${country.id}&kon=women`}
+                  class="text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  Damer
+                </a>
+                <a
+                  href={`/serier?land=${country.id}`}
+                  class="text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  Alla serier
                 </a>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8">#</TableHead>
-                    <TableHead>Lag</TableHead>
-                    <TableHead className="text-right">S</TableHead>
-                    <TableHead className="text-right">P</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {entry.standings.map((row) => (
-                    <TableRow>
-                      <TableCell className="text-muted-foreground tabular-nums">
-                        {row.position}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <a
-                          href={`/lag/${entry.competition.externalId}/${row.teamExternalId}`}
-                          class="hover:underline"
-                        >
-                          {row.teamName}
-                        </a>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {row.played}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
-                        {row.points}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        ))}
+            </article>
+          )
+        })}
       </div>
     </section>
 
     <div class="mt-10 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
       <section>
-        <h2 class="font-heading text-2xl font-semibold">Senaste resultat</h2>
-        <Card className="mt-4">
-          <CardContent>
-            <ul class="divide-y">
-              {data.latestGames.map((game) => (
-                <li class="py-2.5">
-                  <a
-                    href={`/serie/${game.competitionExternalId}#match-${game.externalId}`}
-                    class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 text-sm"
-                  >
-                    <span class="truncate text-right">{game.home}</span>
-                    <span class="font-semibold whitespace-nowrap tabular-nums">
-                      {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
-                    </span>
-                    <span class="truncate">{game.away}</span>
-                    <span class="col-span-3 text-center text-xs text-muted-foreground">
-                      {game.competition} · {formatDate(game.startsAt)}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <div class="flex items-baseline justify-between gap-4">
+          <h2 class="font-heading text-2xl font-semibold">Senaste resultat</h2>
+          <a
+            href="/serier"
+            class="text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
+          >
+            Serier
+          </a>
+        </div>
+        <div class="mt-4 border-y">
+          <ul class="divide-y">
+            {data.latestGames.map((game) => (
+              <li>
+                <a
+                  href={`/serie/${game.competitionExternalId}#match-${game.externalId}`}
+                  class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 px-1 py-3 text-sm hover:bg-muted/50"
+                >
+                  <span class="truncate text-right">{game.home}</span>
+                  <span class="font-semibold whitespace-nowrap tabular-nums">
+                    {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
+                  </span>
+                  <span class="truncate">{game.away}</span>
+                  <span class="col-span-3 text-center text-xs text-muted-foreground">
+                    {game.countryName} · {game.competition} ·{" "}
+                    {formatDate(game.startsAt)}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <section>
-        <h2 class="font-heading text-2xl font-semibold">Skytteligan</h2>
-        <Card className="mt-4">
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Spelare</TableHead>
-                  <TableHead className="text-right">Mål</TableHead>
-                  <TableHead className="text-right">P</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.leaders.map((leader) => (
-                  <TableRow>
-                    <TableCell>
-                      <a
-                        href={`/spelare/${leader.playerExternalId}`}
-                        class="block hover:underline"
-                      >
-                        {leader.playerName}
-                        <span class="block text-xs text-muted-foreground">
-                          {leader.clubName}
-                        </span>
-                      </a>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {leader.goals}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">
-                      {leader.points}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <div class="flex items-baseline justify-between gap-4">
+          <h2 class="font-heading text-2xl font-semibold">Skytteligan</h2>
+          <span class="text-xs text-muted-foreground">Sverige · SSL</span>
+        </div>
+        <div class="mt-4 border-y">
+          <ul class="divide-y">
+            {data.leaders.map((leader) => (
+              <li>
+                <a
+                  href={`/spelare/${leader.playerExternalId}`}
+                  class="flex items-baseline justify-between gap-3 px-1 py-3 text-sm hover:bg-muted/50"
+                >
+                  <span class="min-w-0">
+                    <span class="block truncate font-medium">
+                      {leader.playerName}
+                    </span>
+                    <span class="block truncate text-xs text-muted-foreground">
+                      {leader.clubName}
+                    </span>
+                  </span>
+                  <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
+                    {leader.goals} mål · {leader.points} p
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
     </div>
   </div>
