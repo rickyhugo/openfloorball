@@ -3,6 +3,7 @@ import Layout from "@/layouts/main.astro"
 import { LiveMatch } from "@/components/live-match"
 import { getLiveMatch, isLiveSource } from "@/lib/live"
 import { LIVE_SOURCE_COUNTRY } from "@/lib/live-types"
+import { PageHeader } from "@/components/page-header"
 
 export const prerender = false
 
@@ -25,29 +26,23 @@ const external = match.competitionHref?.startsWith("http")
   description={`Live-resultat och händelser: ${title}.`}
 >
   <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
-    <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
-      <a
-        href="/live"
-        class="underline decoration-border underline-offset-4 hover:text-foreground"
-      >
-        Live
-      </a>
-      <span class="mx-2">/</span>
-      <span>{LIVE_SOURCE_COUNTRY[source]}</span>
-      <span class="mx-2">/</span>
-      {match.competitionHref ? (
-        <a
-          href={match.competitionHref}
-          target={external ? "_blank" : undefined}
-          rel={external ? "noreferrer" : undefined}
-          class="underline decoration-border underline-offset-4 hover:text-foreground"
-        >
-          {match.competition}
-        </a>
-      ) : (
-        <span>{match.competition}</span>
-      )}
-    </nav>
+    <PageHeader
+      eyebrow={[
+        { href: "/live", label: "Live" },
+        { label: LIVE_SOURCE_COUNTRY[source] },
+        match.competitionHref
+          ? {
+              href: match.competitionHref,
+              label: match.competition,
+              external: true,
+            }
+          : { label: match.competition },
+      ]}
+      title={`${match.home.name} – ${match.away.name}`}
+      description={[match.competition, match.round, match.venue]
+        .filter(Boolean)
+        .join(" · ")}
+    />
     <LiveMatch initial={match} matchId={id} source={source} client:load />
   </div>
 </Layout>

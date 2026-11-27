@@ -1,6 +1,7 @@
 import * as React from "react"
 import type { LiveMatch as LiveMatchData, LiveSource } from "@/lib/live-types"
 import { MatchTimeline } from "@/components/match-timeline"
+import { Badge } from "@/components/ui/badge"
 
 function startTime(match: LiveMatchData) {
   return match.timeLabel || match.startsAt.slice(11, 16)
@@ -75,30 +76,22 @@ export function LiveMatch({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>
-          {match.competition}
-          {match.round ? ` · ${match.round}` : ""}
-        </span>
-        {match.venue ? <span>· {match.venue}</span> : null}
-      </div>
-
-      <div className="mt-4 rounded-xl border p-4 sm:p-6">
+      <div className="border p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
-          <span className="inline-flex items-center gap-1.5 font-medium tracking-wider uppercase">
-            {live ? (
-              <>
-                <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
-                <span className="text-emerald-600">Live</span>
-              </>
-            ) : match.status === "finished" ? (
-              "Slut"
-            ) : match.status === "cancelled" ? (
-              "Inställd"
-            ) : (
-              "Kommande"
-            )}
-          </span>
+          {live ? (
+            <Badge className="gap-1.5">
+              <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
+              Live
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground">
+              {match.status === "finished"
+                ? "Slut"
+                : match.status === "cancelled"
+                  ? "Inställd"
+                  : "Kommande"}
+            </Badge>
+          )}
           {periodText(match) ? (
             <span className="text-muted-foreground tabular-nums">
               · {periodText(match)}

@@ -2,6 +2,17 @@
 import Layout from "@/layouts/main.astro"
 import { StandingTable } from "@/components/standings-table"
 import { getCompetition } from "@/lib/db/queries"
+import { PageHeader } from "@/components/page-header"
+import { LeaderboardCard } from "@/components/leaderboard-card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export const prerender = false
 
@@ -120,16 +131,14 @@ const sourceUrl =
   description={`Tabell, resultat och skytteliga för ${data.name} ${data.seasonLabel}.`}
 >
   <div class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
-    <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
-      <a
-        href="/serier"
-        class="underline decoration-border underline-offset-4 hover:text-foreground"
-      >
-        Alla serier
-      </a>
-      <span class="mx-2">/</span>
-      <span>{data.categoryName ?? data.name}</span>
-    </nav>
+    <PageHeader
+      eyebrow={[
+        { href: "/serier", label: "Alla serier" },
+        { label: data.categoryName ?? data.name },
+      ]}
+      title={data.name}
+      description={`${data.name} · ${data.seasonLabel} · ${standingRows.length} lag · Källa: ${sourceUrl}`}
+    />
 
     <StandingTable
       competition={data.name}
@@ -160,8 +169,13 @@ const sourceUrl =
                       class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 px-1 text-sm hover:bg-muted/50"
                     >
                       <span class="truncate text-right">{game.homeName}</span>
-                      <span class="font-semibold whitespace-nowrap tabular-nums">
-                        {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
+                      <span class="whitespace-nowrap">
+                        <Badge
+                          variant="secondary"
+                          className="font-semibold tabular-nums"
+                        >
+                          {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
+                        </Badge>
                         <span class="text-xs font-normal text-muted-foreground">
                           {suffix(game.decidedBy)}
                         </span>
@@ -201,56 +215,19 @@ const sourceUrl =
     {data.leaders.length > 0 ? (
       <section class="mt-14">
         <h2 class="font-heading text-2xl font-semibold">Spelarstatistik</h2>
-        <div class="mt-4 grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {leaderboards.map((board) => (
-            <div class="min-w-0">
-              <div class="flex items-baseline justify-between gap-3">
-                <h3 class="font-heading text-xl font-semibold">
-                  {board.label}
-                </h3>
-                <span class="text-xs text-muted-foreground">{board.unit}</span>
-              </div>
-              {board.rows.length > 0 ? (
-                <div class="mt-2 overflow-x-auto border-y">
-                  <table class="w-full text-sm">
-                    <thead>
-                      <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
-                        <th class="py-2 pr-3 font-medium">Spelare</th>
-                        <th class="py-2 pl-3 text-right font-medium">
-                          {board.unit}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {board.rows.map((row) => (
-                        <tr class="border-b border-border/60">
-                          <td class="min-w-0 py-2 pr-3">
-                            <a
-                              href={`/spelare/${row.playerExternalId}`}
-                              class="block truncate hover:underline"
-                            >
-                              {row.playerName}
-                            </a>
-                            <span class="block truncate text-xs text-muted-foreground">
-                              {row.clubName}
-                            </span>
-                          </td>
-                          <td class="py-2 pl-3 text-right font-semibold tabular-nums">
-                            {board.value(row)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p class="mt-2 border-y py-3 text-sm text-muted-foreground">
-                  {"empty" in board && board.empty
-                    ? board.empty
-                    : "Inga spelare registrerade."}
-                </p>
-              )}
-            </div>
+            <LeaderboardCard
+              title={board.label}
+              unit={board.unit}
+              empty={"empty" in board ? board.empty : undefined}
+              rows={board.rows.map((row) => ({
+                href: `/spelare/${row.playerExternalId}`,
+                name: row.playerName,
+                subtitle: row.clubName,
+                value: board.value(row),
+              }))}
+            />
           ))}
         </div>
       </section>
@@ -259,26 +236,34 @@ const sourceUrl =
     {data.goalies.length > 0 ? (
       <section class="mt-14">
         <h2 class="font-heading text-2xl font-semibold">Målvakter</h2>
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
-                <th class="py-2 pr-3 font-medium">Spelare</th>
-                <th class="hidden py-2 pr-3 font-medium sm:table-cell">Lag</th>
-                <th class="py-2 pl-3 text-right font-medium">M</th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+        <div class="mt-4 border-y">
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="tracking-wider uppercase">
+                  Spelare
+                </TableHead>
+                <TableHead className="hidden tracking-wider uppercase sm:table-cell">
+                  Lag
+                </TableHead>
+                <TableHead className="text-right tracking-wider uppercase">
+                  M
+                </TableHead>
+                <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
                   Skott
-                </th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+                </TableHead>
+                <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
                   IM
-                </th>
-                <th class="py-2 pl-3 text-right font-medium">Räddning %</th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead className="text-right tracking-wider uppercase">
+                  Räddning %
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.goalies.map((row) => (
-                <tr class="border-b border-border/60">
-                  <td class="py-2 pr-3">
+                <TableRow>
+                  <TableCell className="py-2.5">
                     <a
                       href={`/spelare/${row.playerExternalId}`}
                       class="hover:underline"
@@ -288,40 +273,28 @@ const sourceUrl =
                     <span class="block text-xs text-muted-foreground sm:hidden">
                       {row.clubName}
                     </span>
-                  </td>
-                  <td class="hidden py-2 pr-3 text-muted-foreground sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden py-2.5 text-muted-foreground sm:table-cell">
                     {row.clubName}
-                  </td>
-                  <td class="py-2 pl-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right tabular-nums">
                     {row.matches}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden py-2.5 text-right tabular-nums sm:table-cell">
                     {row.shotsAgainst}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden py-2.5 text-right tabular-nums sm:table-cell">
                     {row.goalsAgainst}
-                  </td>
-                  <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right font-semibold tabular-nums">
                     {row.savePercentage.toFixed(2)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
     ) : null}
   </div>
 </Layout>
-
-<script>
-  function revealHash() {
-    const target = document.getElementById(location.hash.slice(1))
-    if (!target) return
-    const details = target.closest("details")
-    if (details) details.open = true
-    target.scrollIntoView({ block: "center" })
-  }
-  revealHash()
-  window.addEventListener("hashchange", revealHash)
-</script>

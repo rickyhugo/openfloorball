@@ -2,6 +2,17 @@
 import Layout from "@/layouts/main.astro"
 import { getLanding } from "@/lib/landing"
 import { listCountries } from "@/lib/db/queries"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/page-header"
+import { LeaderboardCard } from "@/components/leaderboard-card"
 
 export const prerender = false
 
@@ -61,22 +72,23 @@ const leaderboards = [
   description="Tabeller, resultat och live från Sverige, Finland och Schweiz."
 >
   <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
-    <header class="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-          OpenFloorball
-        </h1>
-        <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Tabeller, resultat och live från Sverige, Finland och Schweiz.
-        </p>
-      </div>
+    <PageHeader
+      title="OpenFloorball"
+      description="Tabeller, resultat och live från Sverige, Finland och Schweiz."
+    >
       <a
         href="/live"
-        class="inline-flex h-9 shrink-0 items-center justify-center border px-4 text-sm font-medium transition-colors hover:bg-muted"
+        class="inline-flex h-7 shrink-0 items-center border bg-background px-2.5 text-xs font-medium transition-colors hover:bg-muted"
       >
         Live
       </a>
-    </header>
+      <a
+        href="/serier"
+        class="inline-flex h-7 shrink-0 items-center border bg-background px-2.5 text-xs font-medium transition-colors hover:bg-muted"
+      >
+        Alla serier
+      </a>
+    </PageHeader>
 
     <section class="mt-8">
       <div class="flex items-baseline justify-between gap-4">
@@ -93,24 +105,22 @@ const leaderboards = [
         {countries.map((country) => {
           const board = boards.get(country.id)
           return (
-            <article class="flex min-w-0 flex-col overflow-hidden border p-5">
-              <div class="flex min-w-0 items-start justify-between gap-3">
-                <div>
+            <Card className="min-w-0">
+              <CardHeader>
+                <CardTitle className="font-heading text-lg font-semibold">
                   <a
                     href={`/serier?land=${country.id}`}
                     class="hover:underline"
                   >
-                    <h3 class="font-heading text-2xl font-semibold">
-                      {country.name}
-                    </h3>
+                    {country.name}
                   </a>
-                  <p class="mt-1 text-xs text-muted-foreground">
-                    {country.competitions} serier
-                  </p>
-                </div>
-              </div>
+                </CardTitle>
+                <CardAction>
+                  <Badge variant="outline">{country.competitions} serier</Badge>
+                </CardAction>
+              </CardHeader>
 
-              <div class="mt-5 grid gap-5">
+              <CardContent className="grid gap-5">
                 {genders.map((gender) => {
                   const competition = board?.[gender.key]
                   if (!competition) return null
@@ -133,7 +143,7 @@ const leaderboards = [
                           <li>
                             <a
                               href={`/lag/${competition.externalId}/${row.teamExternalId}`}
-                              class="grid min-w-0 grid-cols-[1.25rem_minmax(0,1fr)_auto] items-baseline gap-2 py-1.5 text-sm hover:bg-muted/50"
+                              class="grid min-w-0 grid-cols-[1.25rem_minmax(0,1fr)_auto] items-baseline gap-2 py-1.5 text-sm transition-colors hover:bg-muted/50"
                             >
                               <span class="text-xs text-muted-foreground tabular-nums">
                                 {row.position}
@@ -151,9 +161,9 @@ const leaderboards = [
                     </div>
                   )
                 })}
-              </div>
+              </CardContent>
 
-              <div class="mt-auto flex flex-wrap gap-x-4 gap-y-1 pt-5 text-xs">
+              <CardFooter className="flex-wrap gap-x-4 gap-y-1 text-xs">
                 <a
                   href={`/serier?land=${country.id}&kon=men`}
                   class="text-muted-foreground hover:text-foreground hover:underline"
@@ -170,10 +180,10 @@ const leaderboards = [
                   href={`/serier?land=${country.id}`}
                   class="text-muted-foreground hover:text-foreground hover:underline"
                 >
-                  Alla serier
+                  Alla serier i {country.name}
                 </a>
-              </div>
-            </article>
+              </CardFooter>
+            </Card>
           )
         })}
       </div>
@@ -198,9 +208,12 @@ const leaderboards = [
                 class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 px-1 py-3 text-sm hover:bg-muted/50"
               >
                 <span class="truncate text-right">{game.home}</span>
-                <span class="font-semibold whitespace-nowrap tabular-nums">
+                <Badge
+                  variant="secondary"
+                  className="font-semibold tabular-nums"
+                >
                   {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
-                </span>
+                </Badge>
                 <span class="truncate">{game.away}</span>
                 <span class="col-span-3 text-center text-xs text-muted-foreground">
                   {game.countryName} · {game.competition} ·{" "}
@@ -220,41 +233,19 @@ const leaderboards = [
           Toppserier · alla länder
         </span>
       </div>
-      <div class="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {leaderboards.map((board) => (
-          <div class="min-w-0">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="font-heading text-xl font-semibold">{board.label}</h3>
-              <span class="text-xs text-muted-foreground">{board.unit}</span>
-            </div>
-            <div class="mt-2 border-y">
-              <ul class="divide-y">
-                {board.rows.map((leader) => (
-                  <li>
-                    <a
-                      href={`/spelare/${leader.playerExternalId}`}
-                      class="flex min-w-0 items-baseline justify-between gap-3 px-1 py-3 text-sm hover:bg-muted/50"
-                    >
-                      <span class="min-w-0">
-                        <span class="block truncate font-medium">
-                          {leader.playerName}
-                        </span>
-                        <span class="block truncate text-xs text-muted-foreground">
-                          {leader.countryName} · {leader.competitionName}
-                        </span>
-                      </span>
-                      <span class="shrink-0 font-semibold tabular-nums">
-                        {board.value(leader)}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {"note" in board && board.note ? (
-              <p class="mt-2 text-xs text-muted-foreground">{board.note}</p>
-            ) : null}
-          </div>
+          <LeaderboardCard
+            title={board.label}
+            unit={board.unit}
+            note={"note" in board ? board.note : undefined}
+            rows={board.rows.map((leader) => ({
+              href: `/spelare/${leader.playerExternalId}`,
+              name: leader.playerName,
+              subtitle: `${leader.countryName} · ${leader.competitionName}`,
+              value: board.value(leader),
+            }))}
+          />
         ))}
       </div>
     </section>

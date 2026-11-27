@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/main.astro"
 import { listCompetitions, listCountries } from "@/lib/db/queries"
+import { Badge } from "@/components/ui/badge"
 
 export const prerender = false
 
@@ -69,6 +70,13 @@ for (const row of byGender) {
 }
 const levelOrder = [...levels.entries()].sort((a, b) => a[1].rank - b[1].rank)
 
+function genderLabel(gender: string) {
+  if (gender === "men") return "Herrar"
+  if (gender === "women") return "Damer"
+  if (gender === "mixed") return "Mixat"
+  return null
+}
+
 const selectedCountry = countries.find((row) => row.id === land)
 const genders = [
   { key: "", label: "Alla" },
@@ -79,13 +87,6 @@ const genders = [
   (gender) =>
     gender.key !== "mixed" || byCountry.some((row) => row.gender === "mixed")
 )
-
-const groups = levelOrder
-  .filter(([key]) => !niva || key === niva)
-  .map(([, group]) => ({
-    ...group,
-    items: group.items.filter((row) => !niva || levelOf(row.name).key === niva),
-  }))
 ---
 
 <Layout
@@ -186,34 +187,58 @@ const groups = levelOrder
       </div>
     </section>
 
-    {groups.length > 0 ? (
-      groups.map((group) => (
-        <section class="mt-10">
-          <div class="flex items-baseline justify-between gap-4 border-b pb-2">
-            <h2 class="font-heading text-2xl font-semibold">{group.label}</h2>
-            <span class="text-xs text-muted-foreground">
-              {group.items.length}
-            </span>
-          </div>
-          <ul class="mt-4 grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-            {group.items.map((item) => (
-              <li>
-                <a
-                  href={`/serie/${item.externalId}`}
-                  class="flex items-baseline justify-between gap-3 text-sm underline decoration-border underline-offset-4 hover:text-foreground hover:decoration-foreground"
-                >
-                  <span>{item.name}</span>
-                  {item.regionName && item.regionName !== "Svenska IBF" ? (
-                    <span class="shrink-0 text-xs text-muted-foreground">
-                      {item.regionName}
-                    </span>
-                  ) : null}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))
+    {filtered.length > 0 ? (
+      countries
+        .filter((country) =>
+          filtered.some((row) => row.countryId === country.id)
+        )
+        .map((country) => {
+          const items = filtered.filter((row) => row.countryId === country.id)
+          return (
+            <section class="mt-10">
+              <div class="flex items-baseline justify-between gap-4 border-b pb-2">
+                <h2 class="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+                  {country.name}
+                </h2>
+                <span class="text-xs text-muted-foreground">
+                  {items.length}
+                </span>
+              </div>
+              <ul class="mt-2 divide-y border-y">
+                {items.map((item) => {
+                  const gender = genderLabel(item.gender)
+                  const region =
+                    item.regionName && item.regionName !== "Svenska IBF"
+                      ? item.regionName
+                      : null
+                  return (
+                    <li>
+                      <a
+                        href={`/serie/${item.externalId}`}
+                        class="flex min-w-0 items-center justify-between gap-3 px-1 py-2.5 text-sm transition-colors hover:bg-muted/50"
+                      >
+                        <span class="min-w-0">
+                          <span class="block truncate font-medium">
+                            {item.name}
+                          </span>
+                          <span class="block truncate text-xs text-muted-foreground">
+                            {region ? `${region} · ` : ""}
+                            {levelOf(item.name).label}
+                          </span>
+                        </span>
+                        {gender ? (
+                          <Badge variant="outline" className="shrink-0">
+                            {gender}
+                          </Badge>
+                        ) : null}
+                      </a>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )
+        })
     ) : (
       <p class="mt-10 text-sm text-muted-foreground">
         Inga serier matchar filtret.

@@ -7,6 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 
 type PlayerRow = {
   competitionName: string
@@ -476,28 +478,27 @@ export function PlayerProfile({
   return (
     <div>
       <header className="flex flex-col gap-5 border-b pb-7 sm:flex-row sm:items-center">
-        {person.imageUrl ? (
-          <img
-            src={person.imageUrl}
-            alt=""
-            width="96"
-            height="96"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className="size-20 shrink-0 rounded-full border object-cover sm:size-24"
-          />
-        ) : (
-          <div className="flex size-20 shrink-0 items-center justify-center rounded-full border bg-muted font-heading text-2xl text-muted-foreground sm:size-24">
+        <Avatar className="size-20 sm:size-24">
+          {person.imageUrl ? (
+            <AvatarImage
+              src={person.imageUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
+          <AvatarFallback className="font-heading text-2xl">
             {initials}
-          </div>
-        )}
+          </AvatarFallback>
+        </Avatar>
         <div className="min-w-0">
-          <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
             {person.name}
           </h1>
           {latest ? (
-            <p className="mt-2 text-sm text-muted-foreground">
-              {person.position ? `${person.position} · ` : null}
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+              {person.position ? (
+                <Badge variant="outline">{person.position}</Badge>
+              ) : null}
               <a
                 href={`/lag/${latest.competitionExternalId}/${latest.teamExternalId}`}
                 className="underline decoration-border underline-offset-4 hover:text-foreground"

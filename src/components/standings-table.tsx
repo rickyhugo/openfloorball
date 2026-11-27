@@ -120,7 +120,6 @@ export function StandingTable({
   competition,
   season,
   source,
-  updatedLabel,
   rows,
 }: StandingTableProps) {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
@@ -154,21 +153,6 @@ export function StandingTable({
 
   return (
     <section className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <div>
-          <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-            Tabell
-          </p>
-          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-            {competition}{" "}
-            <span className="font-normal text-muted-foreground">{season}</span>
-          </h1>
-        </div>
-        <p className="text-xs tracking-wider text-muted-foreground uppercase">
-          {updatedLabel}
-        </p>
-      </header>
-
       <div className="flex items-center justify-end gap-3 sm:hidden">
         <button
           type="button"

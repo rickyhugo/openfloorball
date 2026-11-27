@@ -4,6 +4,7 @@ import {
   type LiveMatches,
   type LiveMatchSummary,
 } from "@/lib/live-types"
+import { Badge } from "@/components/ui/badge"
 
 function startTime(match: LiveMatchSummary) {
   return match.timeLabel || match.startsAt.slice(11, 16)
@@ -38,16 +39,21 @@ function Row({ match }: { match: LiveMatchSummary }) {
       </div>
       <div className="flex shrink-0 items-center gap-2 text-xs">
         {live ? (
-          <span className="flex items-center gap-1.5 font-medium text-emerald-600">
+          <Badge className="gap-1.5">
             <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
             Live
-          </span>
+          </Badge>
         ) : match.status === "finished" ? (
-          <span className="text-muted-foreground">Slut</span>
+          <Badge variant="outline" className="text-muted-foreground">
+            Slut
+          </Badge>
         ) : (
-          <span className="text-muted-foreground tabular-nums">
+          <Badge
+            variant="outline"
+            className="text-muted-foreground tabular-nums"
+          >
             {startTime(match)}
-          </span>
+          </Badge>
         )}
       </div>
     </a>

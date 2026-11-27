@@ -1,6 +1,16 @@
 ---
 import Layout from "@/layouts/main.astro"
 import { getTeam } from "@/lib/db/queries"
+import { PageHeader } from "@/components/page-header"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export const prerender = false
 
@@ -52,124 +62,126 @@ const liveSource =
   description={`Trupp, statistik och matcher för ${data.clubName} i ${data.competitionName} ${data.seasonLabel}.`}
 >
   <div class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
-    <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
-      <a
-        href="/serier"
-        class="underline decoration-border underline-offset-4 hover:text-foreground"
-      >
-        Alla serier
-      </a>
-      <span class="mx-2">/</span>
-      <a
-        href={`/serie/${data.competitionExternalId}`}
-        class="underline decoration-border underline-offset-4 hover:text-foreground"
-      >
-        {data.competitionName}
-      </a>
-    </nav>
-
-    <header class="border-b pb-8">
-      <p class="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-        {data.categoryName ?? data.competitionName}
-      </p>
-      <h1 class="mt-2 font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-        {data.clubName}
-      </h1>
-      <p class="mt-3 text-muted-foreground">
-        {data.competitionName} · {data.seasonLabel}
-      </p>
-      {standing ? (
-        <dl class="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Placering
-            </dt>
-            <dd class="font-semibold tabular-nums">{standing.position}</dd>
-          </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Poäng
-            </dt>
-            <dd class="font-semibold tabular-nums">{standing.points}</dd>
-          </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Matcher
-            </dt>
-            <dd class="font-semibold tabular-nums">{standing.played}</dd>
-          </div>
-          <div>
-            <dt class="text-xs tracking-wider text-muted-foreground uppercase">
-              Målskillnad
-            </dt>
-            <dd class="font-semibold tabular-nums">
-              {goalDifference > 0 ? "+" : ""}
-              {goalDifference}
-            </dd>
-          </div>
-        </dl>
-      ) : null}
-    </header>
+    <PageHeader
+      eyebrow={[
+        { href: "/serier", label: "Alla serier" },
+        {
+          href: `/serie/${data.competitionExternalId}`,
+          label: data.competitionName,
+        },
+      ]}
+      title={data.clubName}
+      description={`${data.competitionName} · ${data.seasonLabel}${
+        data.categoryName ? ` · ${data.categoryName}` : ""
+      }`}
+    />
+    {standing ? (
+      <dl class="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div class="border p-3">
+          <dt class="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
+            Placering
+          </dt>
+          <dd class="mt-1 font-heading text-2xl font-semibold tabular-nums">
+            {standing.position}
+          </dd>
+        </div>
+        <div class="border p-3">
+          <dt class="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
+            Poäng
+          </dt>
+          <dd class="mt-1 font-heading text-2xl font-semibold tabular-nums">
+            {standing.points}
+          </dd>
+        </div>
+        <div class="border p-3">
+          <dt class="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
+            Matcher
+          </dt>
+          <dd class="mt-1 font-heading text-2xl font-semibold tabular-nums">
+            {standing.played}
+          </dd>
+        </div>
+        <div class="border p-3">
+          <dt class="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
+            Målskillnad
+          </dt>
+          <dd class="mt-1 font-heading text-2xl font-semibold tabular-nums">
+            {goalDifference > 0 ? "+" : ""}
+            {goalDifference}
+          </dd>
+        </div>
+      </dl>
+    ) : null}
 
     {skaters.length > 0 ? (
       <section class="mt-12">
         <h2 class="font-heading text-2xl font-semibold">Trupp</h2>
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
-                <th class="py-2 pr-3 font-medium">Spelare</th>
+        <div class="mt-4 border-y">
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="tracking-wider uppercase">
+                  Spelare
+                </TableHead>
                 {hasPositions ? (
-                  <th class="py-2 pl-3 font-medium">Pos</th>
+                  <TableHead className="tracking-wider uppercase">
+                    Pos
+                  </TableHead>
                 ) : null}
-                <th class="py-2 pl-3 text-right font-medium">
+                <TableHead className="text-right tracking-wider uppercase">
                   <abbr title="Matcher" class="no-underline">
                     M
                   </abbr>
-                </th>
-                <th class="py-2 pl-3 text-right font-medium">Mål</th>
-                <th class="py-2 pl-3 text-right font-medium">Ass</th>
-                <th class="py-2 pl-3 text-right font-medium">P</th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+                </TableHead>
+                <TableHead className="text-right tracking-wider uppercase">
+                  Mål
+                </TableHead>
+                <TableHead className="text-right tracking-wider uppercase">
+                  Ass
+                </TableHead>
+                <TableHead className="text-right tracking-wider uppercase">
+                  P
+                </TableHead>
+                <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
                   Utv
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {skaters.map((entry) => (
-                <tr class="border-b border-border/60">
-                  <td class="py-2 pr-3">
+                <TableRow>
+                  <TableCell className="py-2.5">
                     <a
                       href={`/spelare/${entry.playerExternalId}`}
                       class="hover:underline"
                     >
                       {entry.playerName}
                     </a>
-                  </td>
+                  </TableCell>
                   {hasPositions ? (
-                    <td class="py-2 pl-3 whitespace-nowrap text-muted-foreground">
+                    <TableCell className="py-2.5 whitespace-nowrap text-muted-foreground">
                       {entry.position ?? "–"}
-                    </td>
+                    </TableCell>
                   ) : null}
-                  <td class="py-2 pl-3 text-right tabular-nums">
+                  <TableCell className="py-2.5 text-right tabular-nums">
                     {entry.matches ?? "-"}
-                  </td>
-                  <td class="py-2 pl-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right tabular-nums">
                     {entry.goals ?? "-"}
-                  </td>
-                  <td class="py-2 pl-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right tabular-nums">
                     {entry.assists ?? "-"}
-                  </td>
-                  <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right font-semibold tabular-nums">
                     {entry.points ?? "-"}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden py-2.5 text-right tabular-nums sm:table-cell">
                     {entry.penaltyMinutes ?? "-"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
     ) : null}
@@ -177,50 +189,56 @@ const liveSource =
     {goalies.length > 0 ? (
       <section class="mt-12">
         <h2 class="font-heading text-2xl font-semibold">Målvakter</h2>
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b text-left text-xs tracking-wider text-muted-foreground uppercase">
-                <th class="py-2 pr-3 font-medium">Spelare</th>
-                <th class="py-2 pl-3 text-right font-medium">M</th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+        <div class="mt-4 border-y">
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="tracking-wider uppercase">
+                  Spelare
+                </TableHead>
+                <TableHead className="text-right tracking-wider uppercase">
+                  M
+                </TableHead>
+                <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
                   Skott
-                </th>
-                <th class="hidden py-2 pl-3 text-right font-medium sm:table-cell">
+                </TableHead>
+                <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
                   IM
-                </th>
-                <th class="py-2 pl-3 text-right font-medium">Räddning %</th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead className="text-right tracking-wider uppercase">
+                  Räddning %
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {goalies.map((entry) => (
-                <tr class="border-b border-border/60">
-                  <td class="py-2 pr-3">
+                <TableRow>
+                  <TableCell className="py-2.5">
                     <a
                       href={`/spelare/${entry.playerExternalId}`}
                       class="hover:underline"
                     >
                       {entry.playerName}
                     </a>
-                  </td>
-                  <td class="py-2 pl-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right tabular-nums">
                     {entry.goalieMatches ?? "-"}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden py-2.5 text-right tabular-nums sm:table-cell">
                     {entry.shotsAgainst ?? "-"}
-                  </td>
-                  <td class="hidden py-2 pl-3 text-right tabular-nums sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden py-2.5 text-right tabular-nums sm:table-cell">
                     {entry.goalsAgainst ?? "-"}
-                  </td>
-                  <td class="py-2 pl-3 text-right font-semibold tabular-nums">
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right font-semibold tabular-nums">
                     {entry.savePercentage != null
                       ? entry.savePercentage.toFixed(2)
                       : "-"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
     ) : null}
@@ -232,8 +250,13 @@ const liveSource =
           {finished.map((game) => (
             <li class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 py-2.5 text-sm">
               <span class="truncate text-right">{game.homeName}</span>
-              <span class="font-semibold whitespace-nowrap tabular-nums">
-                {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
+              <span class="whitespace-nowrap">
+                <Badge
+                  variant="secondary"
+                  className="font-semibold tabular-nums"
+                >
+                  {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
+                </Badge>
                 <span class="text-xs font-normal text-muted-foreground">
                   {suffix(game.decidedBy)}
                 </span>
