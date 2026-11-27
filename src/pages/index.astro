@@ -13,6 +13,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/page-header"
 import { LeaderboardCard } from "@/components/leaderboard-card"
+import { ScoreTicker } from "@/components/score-ticker"
+import { getLiveMatches } from "@/lib/live"
 
 export const prerender = false
 
@@ -20,6 +22,7 @@ const data = await getLanding()
 if (!data) return Astro.redirect("/serier")
 
 const countries = await listCountries(data.seasonLabel)
+const live = await getLiveMatches().catch(() => null)
 const dateFormat = new Intl.DateTimeFormat("sv-SE", {
   day: "numeric",
   month: "short",
@@ -89,6 +92,23 @@ const leaderboards = [
         Alla serier
       </a>
     </PageHeader>
+
+    {live && live.matches.length > 0 ? (
+      <section class="mt-8">
+        <div class="flex items-baseline justify-between gap-4">
+          <h2 class="font-heading text-2xl font-semibold">Idag</h2>
+          <a
+            href="/live"
+            class="text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
+          >
+            Alla live-matcher
+          </a>
+        </div>
+        <div class="mt-4">
+          <ScoreTicker initial={live} client:load />
+        </div>
+      </section>
+    ) : null}
 
     <section class="mt-8">
       <div class="flex items-baseline justify-between gap-4">
