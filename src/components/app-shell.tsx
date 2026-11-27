@@ -1,8 +1,10 @@
 import * as React from "react"
+import { Moon, Sun } from "@phosphor-icons/react"
 import { SearchBox } from "@/components/search-box"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -14,6 +16,36 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+
+function ThemeToggle() {
+  const [dark, setDark] = React.useState(false)
+
+  React.useEffect(() => {
+    // The inline head script applies the stored or system theme before paint.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDark(document.documentElement.classList.contains("dark"))
+  }, [])
+
+  function toggle() {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle("dark", next)
+    document.documentElement.style.colorScheme = next ? "dark" : "light"
+    localStorage.setItem("theme", next ? "dark" : "light")
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-pressed={dark}
+      className="flex w-full items-center gap-2 px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    >
+      {dark ? <Sun size={16} /> : <Moon size={16} />}
+      {dark ? "Ljust läge" : "Mörkt läge"}
+    </button>
+  )
+}
 
 export type NavGroup = {
   label: string
@@ -55,6 +87,9 @@ export function AppShell({
               </SidebarGroup>
             ))}
           </SidebarContent>
+          <SidebarFooter>
+            <ThemeToggle />
+          </SidebarFooter>
         </Sidebar>
         <SidebarInset>
           <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
