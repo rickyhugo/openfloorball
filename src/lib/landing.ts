@@ -13,6 +13,7 @@ export type LandingGame = {
   competition: string
   competitionExternalId: string
   countryName: string
+  source: string
 }
 
 export type LandingStanding = {
@@ -74,7 +75,7 @@ export async function getLanding() {
              g.home_score as "homeScore", g.away_score as "awayScore",
              g.decided_by as "decidedBy", hc.name as home, ac.name as away,
              c.name as competition, c.external_id as "competitionExternalId",
-             co.name as "countryName",
+             co.name as "countryName", c.source,
              row_number() over (
                partition by co.id order by g.starts_at desc
              ) as country_rank
@@ -89,7 +90,7 @@ export async function getLanding() {
       where s.label = ${label} and g.status = 'finished'
     )
     select "externalId", "startsAt", "homeScore", "awayScore", "decidedBy",
-           home, away, competition, "competitionExternalId", "countryName"
+           home, away, competition, "competitionExternalId", "countryName", source
     from recent
     where country_rank <= 3
     order by "startsAt" desc

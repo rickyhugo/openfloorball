@@ -175,6 +175,7 @@ export async function getTeam(
       competitionExternalId: competition.externalId,
       competitionName: competition.name,
       categoryName: competition.categoryName,
+      source: competition.source,
       seasonId: season.id,
       seasonLabel: season.label,
     })

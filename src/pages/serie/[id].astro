@@ -60,6 +60,12 @@ const orderedRounds = [...rounds.entries()].sort(
 )
 
 const title = `${data.name} ${data.seasonLabel}`
+const liveSource =
+  data.source === "fliiga"
+    ? "fi"
+    : data.source === "swissunihockey"
+      ? "ch"
+      : "se"
 const leaderboards = [
   {
     label: "Skytteliga",
@@ -133,22 +139,24 @@ const sourceUrl =
               </summary>
               <ul class="mt-3 space-y-2">
                 {games.map((game) => (
-                  <li
-                    id={`match-${game.externalId}`}
-                    class="grid scroll-mt-24 grid-cols-[1fr_auto_1fr] items-baseline gap-3 text-sm"
-                  >
-                    <span class="truncate text-right">{game.homeName}</span>
-                    <span class="font-semibold whitespace-nowrap tabular-nums">
-                      {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
-                      <span class="text-xs font-normal text-muted-foreground">
-                        {suffix(game.decidedBy)}
+                  <li id={`match-${game.externalId}`} class="scroll-mt-24">
+                    <a
+                      href={`/live/${liveSource}/${game.externalId}`}
+                      class="grid grid-cols-[1fr_auto_1fr] items-baseline gap-3 px-1 text-sm hover:bg-muted/50"
+                    >
+                      <span class="truncate text-right">{game.homeName}</span>
+                      <span class="font-semibold whitespace-nowrap tabular-nums">
+                        {game.homeScore ?? "-"}-{game.awayScore ?? "-"}
+                        <span class="text-xs font-normal text-muted-foreground">
+                          {suffix(game.decidedBy)}
+                        </span>
                       </span>
-                    </span>
-                    <span class="truncate">{game.awayName}</span>
-                    <span class="col-span-3 text-center text-xs text-muted-foreground">
-                      {formatDate(game.startsAt)}
-                      {game.venue ? `, ${game.venue}` : ""}
-                    </span>
+                      <span class="truncate">{game.awayName}</span>
+                      <span class="col-span-3 text-center text-xs text-muted-foreground">
+                        {formatDate(game.startsAt)}
+                        {game.venue ? `, ${game.venue}` : ""}
+                      </span>
+                    </a>
                   </li>
                 ))}
               </ul>

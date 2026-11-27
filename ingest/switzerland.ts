@@ -64,6 +64,55 @@ function parseSwissDate(value: string | null) {
   return new Date(utc).toISOString()
 }
 
+function swissDateKey(value: string) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Zurich",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value))
+}
+
+type SwissApiGame = {
+  GameID: number
+  GameTime: string
+  HomeTeamClubName: string
+  AwayTeamClubName: string
+}
+
+async function gameIdMap(leagueId: number) {
+  const headers = {
+    "user-agent":
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+    referer: "https://myapp.swissunihockey.ch/",
+    origin: "https://myapp.swissunihockey.ch",
+    accept: "application/json",
+  }
+  const rows: SwissApiGame[] = []
+  for (const path of ["getcomingleaguegames", "getpreviousleaguegames"]) {
+    let lastGameId = 0
+    for (let page = 0; page < 20; page++) {
+      const response = await fetch(
+        `https://swissunihockey-api.azurewebsites.net/api/leagueapi/${path}?LeagueID=${leagueId}&LastGameID=${lastGameId}`,
+        { headers }
+      )
+      if (!response.ok) break
+      const pageRows = (await response.json()) as SwissApiGame[]
+      if (pageRows.length === 0) break
+      rows.push(...pageRows)
+      const next = pageRows[pageRows.length - 1]?.GameID ?? lastGameId
+      if (next === lastGameId) break
+      lastGameId = next
+    }
+  }
+  return new Map(
+    rows.map((row) => [
+      `${normalize(row.HomeTeamClubName)}|${normalize(row.AwayTeamClubName)}|${swissDateKey(row.GameTime)}`,
+      row.GameID,
+    ])
+  )
+}
+
 async function readStandings(page: import("playwright-core").Page) {
   await page.waitForSelector("table tbody tr", { timeout: 20000 })
   return await page.evaluate(() => {
@@ -255,6 +304,8 @@ for (const league of leagues) {
     })
   }
 
+  const apiGameIds = await gameIdMap(leagueId)
+  let unmatchedGames = 0
   const games: ExternalGame[] = []
   for (const tab of ["Previous", "Upcoming"] as const) {
     const cards = await readGames(page, leagueId, tab)
@@ -277,7 +328,13 @@ for (const league of leagues) {
           : played
             ? "regulation"
             : null
-      const externalId = `ch-${leagueId}-${startsAt.slice(0, 10)}-${homeId}-${awayId}`
+      const apiId = apiGameIds.get(
+        `${normalize(card.names[0])}|${normalize(card.names[1])}|${swissDateKey(startsAt)}`
+      )
+      if (!apiId) unmatchedGames++
+      const externalId = apiId
+        ? String(apiId)
+        : `ch-${leagueId}-${startsAt.slice(0, 10)}-${homeId}-${awayId}`
       games.push({
         externalId,
         startsAt,
@@ -296,6 +353,10 @@ for (const league of leagues) {
     console.warn(`player stats ${leagueId} failed`, String(error))
     return []
   })
+
+  if (unmatchedGames) {
+    console.warn(`${league.name}: ${unmatchedGames} games without an API id`)
+  }
 
   // Deduplicate games by external id, keeping a finished row over a scheduled one.
   const gameMap = new Map<string, ExternalGame>()

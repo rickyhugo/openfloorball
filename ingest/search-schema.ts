@@ -20,7 +20,8 @@ team as (
 ),
 gm as (
   select g.id, g.external_id, g.starts_at, g.status, g.home_score, g.away_score,
-         hc.name as home, ac.name as away, c.name as comp, c.external_id as comp_ext
+         hc.name as home, ac.name as away, c.name as comp, c.external_id as comp_ext,
+         c.source as comp_source
   from game g
   join team_season ht on ht.id = g.home_team_season_id
   join club hc on hc.id = ht.club_id
@@ -54,7 +55,12 @@ select 'game', gm.id::text,
        gm.home || ' - ' || gm.away,
        gm.comp || ' · ' || to_char(gm.starts_at at time zone 'Europe/Stockholm', 'YYYY-MM-DD') ||
          case when gm.status = 'finished' then ' · ' || coalesce(gm.home_score::text, '') || '-' || coalesce(gm.away_score::text, '') else '' end,
-       '/serie/' || gm.comp_ext || '#match-' || gm.external_id,
+       '/live/' ||
+         case gm.comp_source
+           when 'fliiga' then 'fi'
+           when 'swissunihockey' then 'ch'
+           else 'se'
+         end || '/' || gm.external_id,
        lower(unaccent(concat_ws(' ', gm.home, gm.away, gm.comp, to_char(gm.starts_at at time zone 'Europe/Stockholm', 'YYYY-MM-DD')))), 6
 from gm
 union all

@@ -38,6 +38,12 @@ const skaters = data.roster.filter((entry) => entry.savePercentage === null)
 const goalies = data.roster.filter((entry) => entry.savePercentage !== null)
 const standing = data.standing
 const goalDifference = standing ? standing.goalsFor - standing.goalsAgainst : 0
+const liveSource =
+  data.source === "fliiga"
+    ? "fi"
+    : data.source === "swissunihockey"
+      ? "ch"
+      : "se"
 ---
 
 <Layout
@@ -225,7 +231,7 @@ const goalDifference = standing ? standing.goalsFor - standing.goalsAgainst : 0
               </span>
               <span class="truncate">{game.awayName}</span>
               <a
-                href={`/serie/${data.competitionExternalId}#match-${game.externalId}`}
+                href={`/live/${liveSource}/${game.externalId}`}
                 class="col-span-3 text-center text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
               >
                 {formatDate(game.startsAt)}
