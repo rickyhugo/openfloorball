@@ -84,13 +84,13 @@ export function LiveMatch({
       </div>
 
       <div className="mt-4 rounded-xl border p-4 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-medium tracking-wider uppercase">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
+          <span className="inline-flex items-center gap-1.5 font-medium tracking-wider uppercase">
             {live ? (
-              <span className="flex items-center gap-1.5 text-emerald-600">
+              <>
                 <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
-                Live
-              </span>
+                <span className="text-emerald-600">Live</span>
+              </>
             ) : match.status === "finished" ? (
               "Slut"
             ) : match.status === "cancelled" ? (
@@ -99,11 +99,13 @@ export function LiveMatch({
               "Kommande"
             )}
           </span>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {periodText(match)}
-          </span>
+          {periodText(match) ? (
+            <span className="text-muted-foreground tabular-nums">
+              · {periodText(match)}
+            </span>
+          ) : null}
         </div>
-        <div className="mt-5 flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-6">
+        <div className="mt-4 flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-6">
           <div className="flex min-w-0 items-center justify-center gap-2 sm:justify-end sm:gap-3 sm:text-right">
             <p className="min-w-0 truncate font-heading text-base font-semibold sm:text-lg">
               {match.home.name}
