@@ -2,6 +2,7 @@
 import Layout from "@/layouts/main.astro"
 import { LiveMatch } from "@/components/live-match"
 import { getLiveMatch, isLiveSource } from "@/lib/live"
+import { LIVE_SOURCE_COUNTRY } from "@/lib/live-types"
 
 export const prerender = false
 
@@ -31,6 +32,8 @@ const external = match.competitionHref?.startsWith("http")
       >
         Live
       </a>
+      <span class="mx-2">/</span>
+      <span>{LIVE_SOURCE_COUNTRY[source]}</span>
       <span class="mx-2">/</span>
       {match.competitionHref ? (
         <a

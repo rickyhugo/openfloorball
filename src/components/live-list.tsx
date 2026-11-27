@@ -1,5 +1,9 @@
 import * as React from "react"
-import type { LiveMatches, LiveMatchSummary } from "@/lib/live-types"
+import {
+  LIVE_SOURCE_COUNTRY,
+  type LiveMatches,
+  type LiveMatchSummary,
+} from "@/lib/live-types"
 
 function startTime(match: LiveMatchSummary) {
   return match.timeLabel || match.startsAt.slice(11, 16)
@@ -19,6 +23,10 @@ function Row({ match }: { match: LiveMatchSummary }) {
     >
       <div className="min-w-0">
         <p className="truncate text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/70">
+            {LIVE_SOURCE_COUNTRY[match.source]}
+          </span>
+          {" · "}
           {match.competition}
           {match.round ? ` · ${match.round}` : ""}
         </p>

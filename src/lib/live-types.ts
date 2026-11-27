@@ -1,5 +1,11 @@
 export type LiveSource = "se" | "fi" | "ch"
 
+export const LIVE_SOURCE_COUNTRY: Record<LiveSource, string> = {
+  se: "Sverige",
+  fi: "Finland",
+  ch: "Schweiz",
+}
+
 export type LiveStatus = "live" | "finished" | "upcoming" | "cancelled"
 
 export type LiveTeam = {

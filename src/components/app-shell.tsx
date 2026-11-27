@@ -22,11 +22,9 @@ export type NavGroup = {
 
 export function AppShell({
   nav,
-  seasonLabel,
   children,
 }: {
   nav: NavGroup[]
-  seasonLabel: string
   children: React.ReactNode
 }) {
   return (
@@ -40,9 +38,6 @@ export function AppShell({
             >
               OpenFloorball
             </a>
-            <p className="px-2 pb-1 text-xs text-muted-foreground">
-              Säsong {seasonLabel}
-            </p>
           </SidebarHeader>
           <SidebarContent>
             {nav.map((group) => (
