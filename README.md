@@ -53,6 +53,12 @@ Switzerland comes from the public `myapp.swissunihockey.ch` pages, read in a hea
 mise run ingest:ch
 ```
 
+Player totals for the Finnish and Swiss top leagues come from the public scoreboard and statistics feeds. Load them after the league data.
+
+```sh
+mise run ingest:players
+```
+
 External league loaders share `ingest/external/load.ts`. They upsert country, competition, season, clubs, season teams, standings and games, then refresh the search index.
 
 ## Live

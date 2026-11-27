@@ -133,7 +133,6 @@ export async function getCompetition(externalId: string) {
       desc(playerCompetitionStat.goals),
       asc(player.name)
     )
-    .limit(20)
 
   const goalies = await db
     .select({

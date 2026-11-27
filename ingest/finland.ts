@@ -3,6 +3,7 @@ import { chromium } from "playwright-core"
 import {
   loadExternalLeague,
   type ExternalGame,
+  type ExternalPlayer,
   type ExternalStanding,
   type ExternalTeam,
 } from "./external/load"
@@ -48,6 +49,57 @@ function parseCookieHeader(header: string) {
       const [name, ...rest] = part.split("=")
       return { name, value: rest.join("="), domain: ".fliiga.com", path: "/" }
     })
+}
+
+type FinlandPlayer = {
+  torneopal_id: string
+  first_name: string
+  last_name: string
+  image_url: string | null
+  games_played: number
+  goals: number
+  assists: number
+  points: number
+  penalty_minutes: number
+  team_name: string
+  role: string
+}
+
+async function fetchPlayers(
+  gender: "men" | "women",
+  teamsByName: Map<string, string>
+): Promise<ExternalPlayer[]> {
+  const series = gender === "men" ? "miehet" : "naiset"
+  const url =
+    "https://fliiga.com/wp-admin/admin-ajax.php?action=fliiga_scoreboard_points" +
+    `&season=2026-2027&phase=&series=${series}&lang=en`
+  const response = await fetch("https://r.jina.ai/" + url, {
+    headers: {
+      "user-agent": UA,
+      "x-return-format": "text",
+      "x-no-cache": "true",
+    },
+  })
+  if (!response.ok)
+    throw new Error(`player stats ${gender} -> ${response.status}`)
+  const rows = JSON.parse(await response.text()) as FinlandPlayer[]
+  return rows.flatMap((row) => {
+    const teamExternalId = teamsByName.get(normalize(row.team_name))
+    if (!teamExternalId) return []
+    return [
+      {
+        externalId: row.torneopal_id,
+        name: `${row.first_name} ${row.last_name}`,
+        teamExternalId,
+        imageUrl: row.image_url,
+        matches: row.games_played,
+        goals: row.goals,
+        assists: row.assists,
+        points: row.points,
+        penaltyMinutes: row.penalty_minutes,
+      },
+    ]
+  })
 }
 
 function parseSchedule(html: string) {
@@ -190,6 +242,12 @@ for (const league of leagues) {
   const { teams, teamsByName, games } = parseSchedule(schedule)
   const standingsRows = await fetchStandings(league.gender)
   const standings = parseStandings(standingsRows, teamsByName, teams)
+  const players = await fetchPlayers(league.gender, teamsByName).catch(
+    (error) => {
+      console.warn(`player stats ${league.gender} failed`, String(error))
+      return []
+    }
+  )
   const result = await loadExternalLeague({
     source: "fliiga",
     country: { id: "FI", name: "Finland" },
@@ -203,6 +261,7 @@ for (const league of leagues) {
     teams: [...teams.values()],
     games,
     standings,
+    players,
   })
   console.log(league.name, result)
   await new Promise((resolve) => setTimeout(resolve, 1000))

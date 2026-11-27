@@ -2,6 +2,7 @@ import { chromium } from "playwright-core"
 import {
   loadExternalLeague,
   type ExternalGame,
+  type ExternalPlayer,
   type ExternalStanding,
   type ExternalTeam,
 } from "./external/load"
@@ -149,6 +150,52 @@ const leagues = [
   },
 ]
 
+type SwissStatRow = {
+  ItemID: number
+  Name: string
+  Details: string
+  ValueColumns: Array<{ Value: string }>
+}
+
+async function fetchPlayers(
+  leagueId: number,
+  teamsByName: Map<string, string>
+): Promise<ExternalPlayer[]> {
+  const response = await fetch(
+    "https://swissunihockey-api.azurewebsites.net/api/statisticstableapi/getplayerstatisticsforleague" +
+      `?LeagueID=${leagueId}&PageID=0&PageSize=1000&SelectedColumnType=11`,
+    {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+        referer: "https://myapp.swissunihockey.ch/",
+        origin: "https://myapp.swissunihockey.ch",
+        accept: "application/json",
+      },
+    }
+  )
+  if (!response.ok)
+    throw new Error(`player stats ${leagueId} -> ${response.status}`)
+  const rows = (await response.json()) as SwissStatRow[]
+  return rows.flatMap((row) => {
+    const teamExternalId = teamsByName.get(normalize(row.Details))
+    if (!teamExternalId || row.ValueColumns.length < 4) return []
+    return [
+      {
+        externalId: String(row.ItemID),
+        name: row.Name,
+        teamExternalId,
+        imageUrl: null,
+        matches: number(row.ValueColumns[0].Value),
+        goals: number(row.ValueColumns[1].Value),
+        assists: number(row.ValueColumns[2].Value),
+        points: number(row.ValueColumns[3].Value),
+        penaltyMinutes: number(row.ValueColumns[4]?.Value ?? "0"),
+      },
+    ]
+  })
+}
+
 const browser = await chromium.launch({
   executablePath: process.env.CHROME_PATH ?? "/usr/bin/google-chrome-stable",
   headless: true,
@@ -245,6 +292,11 @@ for (const league of leagues) {
     }
   }
 
+  const players = await fetchPlayers(leagueId, teamsByName).catch((error) => {
+    console.warn(`player stats ${leagueId} failed`, String(error))
+    return []
+  })
+
   // Deduplicate games by external id, keeping a finished row over a scheduled one.
   const gameMap = new Map<string, ExternalGame>()
   for (const game of games) {
@@ -270,6 +322,7 @@ for (const league of leagues) {
     teams: [...teams.values()],
     games: [...gameMap.values()],
     standings,
+    players,
   })
   console.log(league.name, result)
   await page.close()

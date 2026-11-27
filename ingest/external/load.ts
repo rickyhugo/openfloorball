@@ -4,6 +4,9 @@ import {
   competition,
   country,
   game,
+  player,
+  playerCompetitionStat,
+  rosterEntry,
   season,
   teamSeason,
   teamSeasonStat,
@@ -27,6 +30,18 @@ export type ExternalGame = {
   decidedBy?: "regulation" | "overtime" | "shootout" | null
   round?: string | null
   venue?: string | null
+}
+
+export type ExternalPlayer = {
+  externalId: string
+  name: string
+  teamExternalId: string
+  imageUrl?: string | null
+  matches: number
+  goals: number
+  assists: number
+  points: number
+  penaltyMinutes: number
 }
 
 export type ExternalStanding = {
@@ -55,6 +70,7 @@ export type ExternalLeague = {
   teams: ExternalTeam[]
   games: ExternalGame[]
   standings: ExternalStanding[]
+  players?: ExternalPlayer[]
 }
 
 function slugify(value: string) {
@@ -233,6 +249,61 @@ export async function loadExternalLeague(league: ExternalLeague) {
       })
   }
 
+  for (const entry of league.players ?? []) {
+    const teamSeasonId = teamSeasonIds.get(entry.teamExternalId)
+    if (!teamSeasonId) continue
+    const [playerRow] = await db
+      .insert(player)
+      .values({
+        source: league.source,
+        externalId: entry.externalId,
+        name: entry.name,
+        imageUrl: entry.imageUrl ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [player.source, player.externalId],
+        set: { name: entry.name, imageUrl: entry.imageUrl ?? null },
+      })
+      .returning({ id: player.id })
+
+    await db
+      .insert(rosterEntry)
+      .values({
+        seasonId: seasonRow.id,
+        teamSeasonId,
+        playerId: playerRow.id,
+      })
+      .onConflictDoNothing()
+
+    await db
+      .insert(playerCompetitionStat)
+      .values({
+        seasonId: seasonRow.id,
+        teamSeasonId,
+        playerId: playerRow.id,
+        matches: entry.matches,
+        goals: entry.goals,
+        assists: entry.assists,
+        points: entry.points,
+        penaltyMinutes: entry.penaltyMinutes,
+      })
+      .onConflictDoUpdate({
+        target: [
+          playerCompetitionStat.seasonId,
+          playerCompetitionStat.teamSeasonId,
+          playerCompetitionStat.playerId,
+        ],
+        set: {
+          matches: entry.matches,
+          goals: entry.goals,
+          assists: entry.assists,
+          points: entry.points,
+          penaltyMinutes: entry.penaltyMinutes,
+          fetchedAt: new Date(),
+        },
+      })
+  }
+
   await ensureSearch()
   await refreshSearch()
 
@@ -241,5 +312,6 @@ export async function loadExternalLeague(league: ExternalLeague) {
     teams: league.teams.length,
     games: league.games.length,
     standings: league.standings.length,
+    players: league.players?.length ?? 0,
   }
 }

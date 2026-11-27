@@ -42,6 +42,7 @@ export type LandingLeader = {
   playerExternalId: string
   clubName: string
   countryName: string
+  competitionName: string
   goals: number
   assists: number
   points: number
@@ -142,34 +143,64 @@ export async function getLanding() {
     boards.set(row.countryId, board)
   }
 
-  const [sslMen] = (await sql`
-    select c.external_id as "externalId"
-    from competition c
-    join season s on s.competition_id = c.id
+  const leaderRows = (await sql`
+    select p.name as "playerName", p.external_id as "playerExternalId",
+           cl.name as "clubName", co.name as "countryName",
+           c.name as "competitionName",
+           pcs.goals, pcs.assists, pcs.points
+    from player_competition_stat pcs
+    join player p on p.id = pcs.player_id
+    join team_season ts on ts.id = pcs.team_season_id
+    join club cl on cl.id = ts.club_id
+    join season s on s.id = pcs.season_id
+    join competition c on c.id = s.competition_id
+    join country co on co.id = c.country_id
     where s.label = ${label}
-      and c.gender = 'men'
-      and c.name ilike '%SSL%'
-    order by c.name
-    limit 1
-  `) as Array<{ externalId: string }>
+      and (
+        c.name ilike '%SSL%'
+        or c.name ilike '%F-Liiga%'
+        or c.name ilike '%L-UPL%'
+      )
+  `) as Array<LandingLeader>
 
-  const leaders = sslMen
-    ? ((await sql`
-        select p.name as "playerName", p.external_id as "playerExternalId",
-               cl.name as "clubName", co.name as "countryName",
-               pcs.goals, pcs.assists, pcs.points
-        from player_competition_stat pcs
-        join player p on p.id = pcs.player_id
-        join team_season ts on ts.id = pcs.team_season_id
-        join club cl on cl.id = ts.club_id
-        join season s on s.id = pcs.season_id
-        join competition c on c.id = s.competition_id
-        join country co on co.id = c.country_id
-        where s.label = ${label} and c.external_id = ${sslMen.externalId}
-        order by pcs.points desc, pcs.goals desc
-        limit 5
-      `) as Array<LandingLeader>)
-    : []
+  const combined = new Map<string, LandingLeader>()
+  for (const row of leaderRows) {
+    const key = `${row.countryName}|${row.playerExternalId}`
+    const current = combined.get(key)
+    if (!current) {
+      combined.set(key, { ...row })
+    } else {
+      current.goals += row.goals
+      current.assists += row.assists
+      current.points += row.points
+    }
+  }
+
+  const topByCountry = (metric: "goals" | "assists" | "points") => {
+    const byCountry = new Map<string, LandingLeader[]>()
+    for (const row of combined.values()) {
+      const list = byCountry.get(row.countryName) ?? []
+      list.push(row)
+      byCountry.set(row.countryName, list)
+    }
+    return [...byCountry.values()]
+      .flatMap((rows) =>
+        rows
+          .sort(
+            (a, b) =>
+              b[metric] - a[metric] ||
+              b.points - a.points ||
+              a.playerName.localeCompare(b.playerName, "sv")
+          )
+          .slice(0, 2)
+      )
+      .sort(
+        (a, b) =>
+          b[metric] - a[metric] ||
+          b.points - a.points ||
+          a.playerName.localeCompare(b.playerName, "sv")
+      )
+  }
 
   return {
     seasonLabel: label,
@@ -177,6 +208,10 @@ export async function getLanding() {
     boards: [...boards.values()].sort((a, b) =>
       a.countryName.localeCompare(b.countryName, "sv")
     ),
-    leaders,
+    leaders: {
+      goals: topByCountry("goals"),
+      assists: topByCountry("assists"),
+      points: topByCountry("points"),
+    },
   }
 }
