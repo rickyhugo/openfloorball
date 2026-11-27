@@ -127,13 +127,13 @@ export function SearchBox() {
         aria-expanded={open}
         aria-controls="global-search-results"
         aria-autocomplete="list"
-        className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="h-9 w-full rounded-none border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
       />
       {open && query.trim().length >= 2 ? (
         <div
           id="global-search-results"
           role="listbox"
-          className="absolute inset-x-0 top-full z-50 mt-1 max-h-96 overflow-y-auto rounded-md border bg-popover py-1 text-popover-foreground shadow-sm"
+          className="absolute inset-x-0 top-full z-50 mt-1 max-h-96 overflow-y-auto rounded-none border bg-popover py-1 text-popover-foreground shadow-sm"
         >
           {flat.length === 0 ? (
             <p className="px-3 py-2 text-sm text-muted-foreground">
