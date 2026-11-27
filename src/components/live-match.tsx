@@ -12,7 +12,7 @@ function startTime(match: LiveMatchData) {
 
 function periodText(match: LiveMatchData) {
   if (match.status === "upcoming") return `Start ${startTime(match)}`
-  if (match.status === "finished") return "Slut"
+  if (match.status === "finished") return ""
   if (match.status === "cancelled") return "Inställd"
   if (match.inBreak) {
     return `${match.periodName || `Period ${match.period}`} · Paus`

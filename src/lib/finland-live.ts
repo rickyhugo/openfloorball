@@ -58,14 +58,18 @@ async function fetchDirect(url: string) {
 }
 
 async function fetchViaReader(url: string, format: "html" | "text" = "html") {
+  const headers: Record<string, string> = {
+    "user-agent": USER_AGENT,
+    accept:
+      format === "html" ? "text/html,application/xhtml+xml" : "text/plain",
+    "x-return-format": format,
+    "x-no-cache": "true",
+  }
+  if (process.env.JINA_API_KEY) {
+    headers.authorization = `Bearer ${process.env.JINA_API_KEY}`
+  }
   const response = await fetch(JINA + url, {
-    headers: {
-      "user-agent": USER_AGENT,
-      accept:
-        format === "html" ? "text/html,application/xhtml+xml" : "text/plain",
-      "x-return-format": format,
-      "x-no-cache": "true",
-    },
+    headers,
     cache: "no-store",
     signal: AbortSignal.timeout(15_000),
   })
