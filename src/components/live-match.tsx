@@ -1,10 +1,6 @@
 import * as React from "react"
-import type {
-  LiveEvent,
-  LiveMatch as LiveMatchData,
-  LiveSource,
-} from "@/lib/live-types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { LiveMatch as LiveMatchData, LiveSource } from "@/lib/live-types"
+import { MatchTimeline } from "@/components/match-timeline"
 
 function startTime(match: LiveMatchData) {
   return match.timeLabel || match.startsAt.slice(11, 16)
@@ -23,58 +19,6 @@ function periodText(match: LiveMatchData) {
   return "Live"
 }
 
-function eventLabel(event: LiveEvent) {
-  if (event.label === "Periodstart") return `${event.periodName} start`
-  if (event.label === "Periodslut") return `${event.periodName} slut`
-  if (event.label.startsWith("Time Out")) return "Time out"
-  return event.label
-}
-
-function teamName(match: LiveMatchData, event: LiveEvent) {
-  if (event.team === "home") return match.home.shortName || match.home.name
-  if (event.team === "away") return match.away.shortName || match.away.name
-  return null
-}
-
-function EventRow({
-  match,
-  event,
-}: {
-  match: LiveMatchData
-  event: LiveEvent
-}) {
-  const goal = event.kind === "goal"
-  const name = teamName(match, event)
-  return (
-    <li
-      className={`grid grid-cols-[3.5rem_1fr_auto] gap-3 py-2.5 ${goal ? "bg-muted/40" : ""}`}
-    >
-      <span className="pt-0.5 text-xs text-muted-foreground tabular-nums">
-        {event.time}
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm">
-          <span className={goal ? "font-semibold" : "font-medium"}>
-            {eventLabel(event)}
-          </span>
-          {event.detail ? (
-            <span className="text-muted-foreground"> · {event.detail}</span>
-          ) : null}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {event.periodName}
-          {name ? ` · ${name}` : ""}
-        </p>
-      </div>
-      {event.score ? (
-        <span className="pt-0.5 text-sm font-semibold tabular-nums">
-          {event.score.home}–{event.score.away}
-        </span>
-      ) : null}
-    </li>
-  )
-}
-
 function TeamLogo({ team }: { team: LiveMatchData["home"] }) {
   return team.logoUrl ? (
     <img
@@ -84,7 +28,7 @@ function TeamLogo({ team }: { team: LiveMatchData["home"] }) {
       height="48"
       loading="lazy"
       referrerPolicy="no-referrer"
-      className="size-10 shrink-0 object-contain sm:size-12"
+      className="size-9 shrink-0 object-contain sm:size-12"
     />
   ) : (
     <div className="size-10 shrink-0 rounded-full bg-muted sm:size-12" />
@@ -128,7 +72,6 @@ export function LiveMatch({
   }, [matchId, source])
 
   const live = match.status === "live"
-  const events = [...match.events].reverse()
 
   return (
     <div>
@@ -160,56 +103,32 @@ export function LiveMatch({
             {periodText(match)}
           </span>
         </div>
-        <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
-          <div className="flex min-w-0 items-center justify-end gap-3 text-right">
-            <p className="min-w-0 truncate font-heading text-lg font-semibold">
+        <div className="mt-5 flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-6">
+          <div className="flex min-w-0 items-center justify-center gap-2 sm:justify-end sm:gap-3 sm:text-right">
+            <p className="min-w-0 truncate font-heading text-base font-semibold sm:text-lg">
               {match.home.name}
             </p>
             <TeamLogo team={match.home} />
           </div>
-          <p className="text-3xl font-semibold whitespace-nowrap tabular-nums sm:text-4xl">
+          <p className="text-center text-3xl font-semibold whitespace-nowrap tabular-nums sm:text-4xl">
             {match.status === "upcoming" ? "–" : (match.homeScore ?? 0)}–
             {match.status === "upcoming" ? "–" : (match.awayScore ?? 0)}
           </p>
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center justify-center gap-2 sm:gap-3">
             <TeamLogo team={match.away} />
-            <p className="min-w-0 truncate font-heading text-lg font-semibold">
+            <p className="min-w-0 truncate font-heading text-base font-semibold sm:text-lg">
               {match.away.name}
             </p>
           </div>
         </div>
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="font-heading text-xl">Händelser</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {events.length > 0 ? (
-            <ul className="divide-y">
-              {events.map((event) => (
-                <EventRow key={event.id} match={match} event={event} />
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {match.status === "upcoming"
-                ? `Matchen börjar ${startTime(match)}.`
-                : "Inga händelser registrerade."}
-            </p>
-          )}
-          {error ? (
-            <p className="mt-4 text-xs text-muted-foreground">
-              Uppdateringen misslyckades.
-            </p>
-          ) : null}
-          {match.eventsNote ? (
-            <p className="mt-4 text-xs text-muted-foreground">
-              {match.eventsNote}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+      <MatchTimeline match={match} />
+      {error ? (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Uppdateringen misslyckades.
+        </p>
+      ) : null}
     </div>
   )
 }
