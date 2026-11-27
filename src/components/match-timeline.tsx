@@ -30,8 +30,8 @@ function eventTone(event: LiveEvent) {
 }
 
 function teamName(match: LiveMatch, event: LiveEvent) {
-  if (event.team === "home") return match.home.shortName || match.home.name
-  if (event.team === "away") return match.away.shortName || match.away.name
+  if (event.team === "home") return match.home.name || match.home.shortName
+  if (event.team === "away") return match.away.name || match.away.shortName
   return null
 }
 
