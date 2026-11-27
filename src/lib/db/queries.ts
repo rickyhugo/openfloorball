@@ -317,6 +317,7 @@ export async function getPlayer(externalId: string) {
     .select({
       competitionName: competition.name,
       competitionExternalId: competition.externalId,
+      categoryName: competition.categoryName,
       seasonLabel: season.label,
       clubName: club.name,
       teamExternalId: teamSeason.externalId,
@@ -356,41 +357,7 @@ export async function getPlayer(externalId: string) {
     .where(eq(player.id, person.id))
     .orderBy(desc(season.label), asc(competition.name))
 
-  const skaterRows = rows.filter((row) => row.matches !== null)
-  const goalieRows = rows.filter((row) => row.goalieMatches !== null)
-  const skaterTotals = skaterRows.reduce(
-    (totals, row) => ({
-      matches: totals.matches + (row.matches ?? 0),
-      goals: totals.goals + (row.goals ?? 0),
-      assists: totals.assists + (row.assists ?? 0),
-      points: totals.points + (row.points ?? 0),
-      penaltyMinutes: totals.penaltyMinutes + (row.penaltyMinutes ?? 0),
-    }),
-    { matches: 0, goals: 0, assists: 0, points: 0, penaltyMinutes: 0 }
-  )
-  const goalieTotals = goalieRows.reduce(
-    (totals, row) => ({
-      matches: totals.matches + (row.goalieMatches ?? 0),
-      shotsAgainst: totals.shotsAgainst + (row.shotsAgainst ?? 0),
-      goalsAgainst: totals.goalsAgainst + (row.goalsAgainst ?? 0),
-    }),
-    { matches: 0, shotsAgainst: 0, goalsAgainst: 0 }
-  )
-  const savePercentage = goalieTotals.shotsAgainst
-    ? ((goalieTotals.shotsAgainst - goalieTotals.goalsAgainst) /
-        goalieTotals.shotsAgainst) *
-      100
-    : null
-
-  return {
-    person,
-    rows,
-    skaterRows,
-    goalieRows,
-    skaterTotals,
-    goalieTotals,
-    savePercentage,
-  }
+  return { person, rows }
 }
 
 export async function listCountries(label: string) {
