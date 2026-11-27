@@ -165,7 +165,7 @@ type FbcEvent = {
   team: string | null
   side: "home" | "away" | "break"
   score: string | null
-  event_kind: "goal" | "penalty" | "break"
+  event_kind: string
   title: string
   assist: string | null
   tag: string | null
@@ -266,7 +266,11 @@ function normalizeFbcEvents(events: FbcEvent[]): LiveEvent[] {
         ? "goal"
         : event.event_kind === "penalty"
           ? "penalty"
-          : "period"
+          : event.event_kind === "timeout"
+            ? "timeout"
+            : event.event_kind.startsWith("goalie")
+              ? "goalie"
+              : "period"
     const label =
       event.event_kind === "goal"
         ? event.tag === "penalty_shot"
