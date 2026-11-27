@@ -280,9 +280,10 @@ function periodState(events: LiveEvent[]) {
 function toSummary(match: IbisMatch): LiveMatchSummary {
   const status = statusOf(match)
   return {
-    id: match.MatchID,
+    id: String(match.MatchID),
+    source: "se",
     competition: match.CompetitionName,
-    competitionId: match.CompetitionID,
+    competitionHref: `/serie/${match.CompetitionID}`,
     round: match.RoundName ?? null,
     home: {
       name: match.HomeTeam,
@@ -297,6 +298,7 @@ function toSummary(match: IbisMatch): LiveMatchSummary {
     homeScore: status === "upcoming" ? null : match.GoalsHomeTeam,
     awayScore: status === "upcoming" ? null : match.GoalsAwayTeam,
     startsAt: match.MatchDateTime,
+    timeLabel: match.MatchDateTime.slice(11, 16),
     status,
   }
 }
@@ -319,6 +321,7 @@ function toLiveMatch(match: IbisMatch): LiveMatch {
           .at(-1) ?? null)
       : null,
     events,
+    eventsNote: null,
   }
 }
 

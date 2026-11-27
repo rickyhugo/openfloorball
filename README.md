@@ -57,7 +57,9 @@ External league loaders share `ingest/external/load.ts`. They upsert country, co
 
 ## Live
 
-`/live` lists today's Swedish matches and `/live/{matchId}` follows one match. The page polls every five seconds and shows the score, period, last event time and the full event feed. Data comes directly from the public iBIS API, signed server-side; no extra credentials are needed.
+`/live` lists today's matches from Sweden, Finland and Switzerland. `/live/{source}/{matchId}` follows one match and refreshes every five seconds with the score, period, last event time and the event feed.
+
+Sources are public but uneven. Sweden uses the signed public iBIS API. Switzerland uses the public myapp endpoints; the free timeline exposes only the latest events. Finland uses the public F-Liiga pages. Set `FLIIGA_COOKIE` to use the direct pages; without it the live adapter falls back to the Jina reader, which is rate limited.
 
 ## Status
 

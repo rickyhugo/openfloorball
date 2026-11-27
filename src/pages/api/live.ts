@@ -1,11 +1,11 @@
 import type { APIRoute } from "astro"
-import { getTodayLiveMatches } from "@/lib/ibis-live"
+import { getLiveMatches } from "@/lib/live"
 
 export const prerender = false
 
 export const GET: APIRoute = async () => {
   try {
-    const data = await getTodayLiveMatches()
+    const data = await getLiveMatches()
     return new Response(JSON.stringify(data), {
       headers: {
         "content-type": "application/json; charset=utf-8",

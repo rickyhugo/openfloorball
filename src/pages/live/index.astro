@@ -1,11 +1,11 @@
 ---
 import Layout from "@/layouts/main.astro"
 import { LiveList } from "@/components/live-list"
-import { getTodayLiveMatches } from "@/lib/ibis-live"
+import { getLiveMatches } from "@/lib/live"
 
 export const prerender = false
 
-const data = await getTodayLiveMatches().catch((error) => {
+const data = await getLiveMatches().catch((error) => {
   console.error("live page failed", error)
   return null
 })

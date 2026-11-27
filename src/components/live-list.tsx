@@ -2,7 +2,7 @@ import * as React from "react"
 import type { LiveMatches, LiveMatchSummary } from "@/lib/live-types"
 
 function startTime(match: LiveMatchSummary) {
-  return match.startsAt.slice(11, 16)
+  return match.timeLabel || match.startsAt.slice(11, 16)
 }
 
 function score(match: LiveMatchSummary) {
@@ -14,7 +14,7 @@ function Row({ match }: { match: LiveMatchSummary }) {
   const live = match.status === "live"
   return (
     <a
-      href={`/live/${match.id}`}
+      href={`/live/${match.source}/${match.id}`}
       className="flex items-center justify-between gap-4 border-b border-border/60 py-3 transition-colors last:border-0 hover:bg-muted/40"
     >
       <div className="min-w-0">
@@ -64,7 +64,7 @@ function Group({
       </h2>
       <div className="mt-2 border-y">
         {matches.map((match) => (
-          <Row key={match.id} match={match} />
+          <Row key={`${match.source}-${match.id}`} match={match} />
         ))}
       </div>
     </section>

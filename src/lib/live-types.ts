@@ -1,3 +1,5 @@
+export type LiveSource = "se" | "fi" | "ch"
+
 export type LiveStatus = "live" | "finished" | "upcoming" | "cancelled"
 
 export type LiveTeam = {
@@ -10,7 +12,7 @@ export type LiveEventKind =
   "goal" | "penalty" | "timeout" | "goalie" | "period" | "other"
 
 export type LiveEvent = {
-  id: number
+  id: number | string
   kind: LiveEventKind
   label: string
   detail: string | null
@@ -22,15 +24,17 @@ export type LiveEvent = {
 }
 
 export type LiveMatchSummary = {
-  id: number
+  id: string
+  source: LiveSource
   competition: string
-  competitionId: number
+  competitionHref: string | null
   round: string | null
   home: LiveTeam
   away: LiveTeam
   homeScore: number | null
   awayScore: number | null
   startsAt: string
+  timeLabel: string
   status: LiveStatus
 }
 
@@ -42,6 +46,7 @@ export type LiveMatch = LiveMatchSummary & {
   clock: string
   lastEventAt: string | null
   events: LiveEvent[]
+  eventsNote: string | null
 }
 
 export type LiveMatches = {

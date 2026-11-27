@@ -1,9 +1,13 @@
 import * as React from "react"
-import type { LiveEvent, LiveMatch as LiveMatchData } from "@/lib/live-types"
+import type {
+  LiveEvent,
+  LiveMatch as LiveMatchData,
+  LiveSource,
+} from "@/lib/live-types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 function startTime(match: LiveMatchData) {
-  return match.startsAt.slice(11, 16)
+  return match.timeLabel || match.startsAt.slice(11, 16)
 }
 
 function periodText(match: LiveMatchData) {
@@ -90,9 +94,11 @@ function TeamLogo({ team }: { team: LiveMatchData["home"] }) {
 export function LiveMatch({
   initial,
   matchId,
+  source,
 }: {
   initial: LiveMatchData
-  matchId: number
+  matchId: string
+  source: LiveSource
 }) {
   const [match, setMatch] = React.useState(initial)
   const [error, setError] = React.useState(false)
@@ -101,7 +107,7 @@ export function LiveMatch({
     let cancelled = false
     async function update() {
       try {
-        const response = await fetch(`/api/live/${matchId}`, {
+        const response = await fetch(`/api/live/${source}/${matchId}`, {
           cache: "no-store",
         })
         if (!response.ok) throw new Error("live match")
@@ -119,7 +125,7 @@ export function LiveMatch({
       cancelled = true
       clearInterval(timer)
     }
-  }, [matchId])
+  }, [matchId, source])
 
   const live = match.status === "live"
   const events = [...match.events].reverse()
@@ -195,6 +201,11 @@ export function LiveMatch({
           {error ? (
             <p className="mt-4 text-xs text-muted-foreground">
               Uppdateringen misslyckades.
+            </p>
+          ) : null}
+          {match.eventsNote ? (
+            <p className="mt-4 text-xs text-muted-foreground">
+              {match.eventsNote}
             </p>
           ) : null}
         </CardContent>

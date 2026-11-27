@@ -1,0 +1,50 @@
+---
+import Layout from "@/layouts/main.astro"
+import { LiveMatch } from "@/components/live-match"
+import { getLiveMatch, isLiveSource } from "@/lib/live"
+
+export const prerender = false
+
+const source = Astro.params.source ?? ""
+const id = Astro.params.id ?? ""
+if (!isLiveSource(source) || !id) return Astro.redirect("/live")
+
+const match = await getLiveMatch(source, id).catch((error) => {
+  console.error("live match page failed", source, id, error)
+  return null
+})
+if (!match) return Astro.redirect("/live")
+
+const title = `${match.home.name} - ${match.away.name}`
+const external = match.competitionHref?.startsWith("http")
+---
+
+<Layout
+  title={`${title}, live`}
+  description={`Live-resultat och händelser: ${title}.`}
+>
+  <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
+    <nav class="mb-6 text-xs tracking-wider text-muted-foreground uppercase">
+      <a
+        href="/live"
+        class="underline decoration-border underline-offset-4 hover:text-foreground"
+      >
+        Live
+      </a>
+      <span class="mx-2">/</span>
+      {match.competitionHref ? (
+        <a
+          href={match.competitionHref}
+          target={external ? "_blank" : undefined}
+          rel={external ? "noreferrer" : undefined}
+          class="underline decoration-border underline-offset-4 hover:text-foreground"
+        >
+          {match.competition}
+        </a>
+      ) : (
+        <span>{match.competition}</span>
+      )}
+    </nav>
+    <LiveMatch initial={match} matchId={id} source={source} client:load />
+  </div>
+</Layout>
