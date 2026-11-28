@@ -23,6 +23,8 @@ type PlayerRow = {
   assists: number | null
   points: number | null
   penaltyMinutes: number | null
+  plusMinus: number | null
+  shots: number | null
   goalieMatches: number | null
   shotsAgainst: number | null
   goalsAgainst: number | null
@@ -80,6 +82,8 @@ type StatGroup = {
   assists: number
   points: number
   penaltyMinutes: number
+  plusMinus: number
+  shots: number
   goalieMatches: number
   shotsAgainst: number
   goalsAgainst: number
@@ -169,9 +173,13 @@ function StatGrid({
 function BreakdownTable({
   groups,
   goalie = false,
+  showPlusMinus = false,
+  showShots = false,
 }: {
   groups: StatGroup[]
   goalie?: boolean
+  showPlusMinus?: boolean
+  showShots?: boolean
 }) {
   if (groups.length === 0) return null
   const totals = groups.reduce(
@@ -181,6 +189,8 @@ function BreakdownTable({
       assists: total.assists + group.assists,
       points: total.points + group.points,
       penaltyMinutes: total.penaltyMinutes + group.penaltyMinutes,
+      plusMinus: total.plusMinus + group.plusMinus,
+      shots: total.shots + group.shots,
       shotsAgainst: total.shotsAgainst + group.shotsAgainst,
       goalsAgainst: total.goalsAgainst + group.goalsAgainst,
     }),
@@ -190,6 +200,8 @@ function BreakdownTable({
       assists: 0,
       points: 0,
       penaltyMinutes: 0,
+      plusMinus: 0,
+      shots: 0,
       shotsAgainst: 0,
       goalsAgainst: 0,
     }
@@ -225,6 +237,16 @@ function BreakdownTable({
                 <TableHead className="hidden text-right sm:table-cell">
                   Utv
                 </TableHead>
+                {showPlusMinus ? (
+                  <TableHead className="hidden text-right sm:table-cell">
+                    +/-
+                  </TableHead>
+                ) : null}
+                {showShots ? (
+                  <TableHead className="hidden text-right sm:table-cell">
+                    Skott
+                  </TableHead>
+                ) : null}
               </>
             )}
           </TableRow>
@@ -276,6 +298,16 @@ function BreakdownTable({
                   <TableCell className="hidden text-right tabular-nums sm:table-cell">
                     {group.penaltyMinutes}
                   </TableCell>
+                  {showPlusMinus ? (
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                      {group.plusMinus}
+                    </TableCell>
+                  ) : null}
+                  {showShots ? (
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                      {group.shots}
+                    </TableCell>
+                  ) : null}
                 </>
               )}
             </TableRow>
@@ -314,6 +346,16 @@ function BreakdownTable({
                   <TableCell className="hidden text-right font-semibold tabular-nums sm:table-cell">
                     {totals.penaltyMinutes}
                   </TableCell>
+                  {showPlusMinus ? (
+                    <TableCell className="hidden text-right font-semibold tabular-nums sm:table-cell">
+                      {totals.plusMinus}
+                    </TableCell>
+                  ) : null}
+                  {showShots ? (
+                    <TableCell className="hidden text-right font-semibold tabular-nums sm:table-cell">
+                      {totals.shots}
+                    </TableCell>
+                  ) : null}
                 </>
               )}
             </TableRow>
@@ -376,6 +418,8 @@ export function PlayerProfile({
   const skaterRows = filtered.filter((row) => row.matches !== null)
   const goalieRows = filtered.filter((row) => row.goalieMatches !== null)
 
+  const showPlusMinus = skaterRows.some((row) => row.plusMinus !== null)
+  const showShots = skaterRows.some((row) => row.shots !== null)
   const skaterTotals = {
     matches: sum(skaterRows.map((row) => row.matches)),
     goals: sum(skaterRows.map((row) => row.goals)),
@@ -414,6 +458,8 @@ export function PlayerProfile({
           assists: 0,
           points: 0,
           penaltyMinutes: 0,
+          plusMinus: 0,
+          shots: 0,
           goalieMatches: 0,
           shotsAgainst: 0,
           goalsAgainst: 0,
@@ -429,6 +475,8 @@ export function PlayerProfile({
         group.assists += row.assists ?? 0
         group.points += row.points ?? 0
         group.penaltyMinutes += row.penaltyMinutes ?? 0
+        group.plusMinus += row.plusMinus ?? 0
+        group.shots += row.shots ?? 0
       }
       map.set(key, group)
     }
@@ -597,7 +645,11 @@ export function PlayerProfile({
             </span>
           </div>
           <div className="mt-3 border-y">
-            <BreakdownTable groups={skaterGroups} />
+            <BreakdownTable
+              groups={skaterGroups}
+              showPlusMinus={showPlusMinus}
+              showShots={showShots}
+            />
           </div>
         </section>
       ) : null}

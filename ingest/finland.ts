@@ -3,6 +3,7 @@ import { chromium } from "playwright-core"
 import {
   loadExternalLeague,
   type ExternalGame,
+  type ExternalGoalie,
   type ExternalPlayer,
   type ExternalStanding,
   type ExternalTeam,
@@ -61,18 +62,20 @@ type FinlandPlayer = {
   assists: number
   points: number
   penalty_minutes: number
+  plus_minus: number
+  shots: number
+  blocks: number
   team_name: string
   role: string
 }
 
-async function fetchPlayers(
-  gender: "men" | "women",
-  teamsByName: Map<string, string>
-): Promise<ExternalPlayer[]> {
-  const series = gender === "men" ? "miehet" : "naiset"
+async function fetchScoreboard<T>(
+  action: string,
+  series: string
+): Promise<T[]> {
   const url =
-    "https://fliiga.com/wp-admin/admin-ajax.php?action=fliiga_scoreboard_points" +
-    `&season=2026-2027&phase=&series=${series}&lang=en`
+    "https://fliiga.com/wp-admin/admin-ajax.php" +
+    `?action=${action}&season=2026-2027&phase=&series=${series}&lang=en`
   const response = await fetch("https://r.jina.ai/" + url, {
     headers: {
       "user-agent": UA,
@@ -80,9 +83,24 @@ async function fetchPlayers(
       "x-no-cache": "true",
     },
   })
-  if (!response.ok)
-    throw new Error(`player stats ${gender} -> ${response.status}`)
-  const rows = JSON.parse(await response.text()) as FinlandPlayer[]
+  if (!response.ok) throw new Error(`${action} ${series} -> ${response.status}`)
+  return JSON.parse(await response.text()) as T[]
+}
+
+function optionalNumber(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+async function fetchPlayers(
+  gender: "men" | "women",
+  teamsByName: Map<string, string>
+): Promise<ExternalPlayer[]> {
+  const series = gender === "men" ? "miehet" : "naiset"
+  const rows = await fetchScoreboard<FinlandPlayer>(
+    "fliiga_scoreboard_points",
+    series
+  )
   return rows.flatMap((row) => {
     const teamExternalId = teamsByName.get(normalize(row.team_name))
     if (!teamExternalId) return []
@@ -97,6 +115,53 @@ async function fetchPlayers(
         assists: row.assists,
         points: row.points,
         penaltyMinutes: row.penalty_minutes,
+        plusMinus: row.plus_minus,
+        shots: row.shots,
+        blocks: row.blocks,
+      },
+    ]
+  })
+}
+
+type FinlandGoalie = {
+  torneopal_id: string
+  first_name: string
+  last_name: string
+  image_url: string | null
+  games_played: number
+  saves: number
+  conceded: number
+  shutouts: string | number
+  save_percentage: string
+  team_name: string
+}
+
+async function fetchGoalies(
+  gender: "men" | "women",
+  teamsByName: Map<string, string>
+): Promise<ExternalGoalie[]> {
+  const series = gender === "men" ? "miehet" : "naiset"
+  const rows = await fetchScoreboard<FinlandGoalie>(
+    "fliiga_scoreboard_goalkeepers",
+    series
+  )
+  return rows.flatMap((row) => {
+    const teamExternalId = teamsByName.get(normalize(row.team_name))
+    if (!teamExternalId) return []
+    const saves = optionalNumber(row.saves)
+    const conceded = optionalNumber(row.conceded)
+    return [
+      {
+        externalId: row.torneopal_id,
+        name: `${row.first_name} ${row.last_name}`,
+        teamExternalId,
+        imageUrl: row.image_url,
+        matches: row.games_played,
+        shotsAgainst:
+          saves !== null && conceded !== null ? saves + conceded : null,
+        goalsAgainst: conceded,
+        savePercentage: optionalNumber(row.save_percentage),
+        cleanSheets: optionalNumber(row.shutouts) ?? 0,
       },
     ]
   })
@@ -248,6 +313,12 @@ for (const league of leagues) {
       return []
     }
   )
+  const goalies = await fetchGoalies(league.gender, teamsByName).catch(
+    (error) => {
+      console.warn(`goalie stats ${league.gender} failed`, String(error))
+      return []
+    }
+  )
   const result = await loadExternalLeague({
     source: "fliiga",
     country: { id: "FI", name: "Finland" },
@@ -262,7 +333,8 @@ for (const league of leagues) {
     games,
     standings,
     players,
+    goalies,
   })
-  console.log(league.name, result)
+  console.log(league.name, { ...result, goalies: goalies.length })
   await new Promise((resolve) => setTimeout(resolve, 1000))
 }

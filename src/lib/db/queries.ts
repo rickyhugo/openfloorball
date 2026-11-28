@@ -344,6 +344,8 @@ export async function getPlayer(externalId: string) {
       assists: playerCompetitionStat.assists,
       points: playerCompetitionStat.points,
       penaltyMinutes: playerCompetitionStat.penaltyMinutes,
+      plusMinus: playerCompetitionStat.plusMinus,
+      shots: playerCompetitionStat.shots,
       goalieMatches: goalieCompetitionStat.matches,
       shotsAgainst: goalieCompetitionStat.shotsAgainst,
       goalsAgainst: goalieCompetitionStat.goalsAgainst,
