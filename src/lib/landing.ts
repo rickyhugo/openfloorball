@@ -102,47 +102,86 @@ export async function getLanding() {
     select c.country_id as "countryId", co.name as "countryName",
            c.gender, c.name as "competitionName",
            c.external_id as "competitionExternalId",
+           sizes.team_count as "teamCount",
            tss.position, ts.external_id as "teamExternalId",
            cl.name as "teamName", tss.played, tss.points
     from competition c
     join country co on co.id = c.country_id
     join season s on s.competition_id = c.id
+    join (
+      select c2.id as comp_id, count(ts2.id) as team_count
+      from competition c2
+      join season s2 on s2.competition_id = c2.id
+      join team_season ts2 on ts2.season_id = s2.id
+      where s2.label = ${label}
+      group by c2.id
+    ) sizes on sizes.comp_id = c.id
     join team_season_stat tss on tss.season_id = s.id
     join team_season ts on ts.id = tss.team_season_id
     join club cl on cl.id = ts.club_id
     where s.label = ${label}
       and tss.position <= 3
-      and (
-        c.name ilike '%SSL%'
-        or c.name ilike '%F-Liiga%'
-        or c.name ilike '%L-UPL%'
-      )
     order by c.country_id, c.gender, c.name, tss.position
-  `) as Array<BoardRow>
+  `) as Array<BoardRow & { teamCount: number }>
+
+  const TOP_PATTERN: Record<string, RegExp> = {
+    SE: /SSL/i,
+    FI: /F-Liiga/i,
+    CH: /L-UPL/i,
+    CZ: /Extraliga/i,
+    SK: /Extraliga/i,
+    LV: /ELVI/i,
+    DE: /FBL/i,
+  }
 
   const boards = new Map<string, LandingBoard>()
+  const boardGroups = new Map<string, Array<BoardRow & { teamCount: number }>>()
   for (const row of boardRows) {
-    const board =
-      boards.get(row.countryId) ??
-      ({
-        countryId: row.countryId,
-        countryName: row.countryName,
-      } satisfies LandingBoard)
-    const key =
-      row.gender === "men" || row.gender === "women" ? row.gender : "other"
-    board[key] ??= {
-      name: row.competitionName,
-      externalId: row.competitionExternalId,
-      standings: [],
+    const key = `${row.countryId}|${row.gender}`
+    const group = boardGroups.get(key) ?? []
+    group.push(row)
+    boardGroups.set(key, group)
+  }
+  for (const [key, rows] of boardGroups) {
+    const [countryId, gender] = key.split("|")
+    const pattern = TOP_PATTERN[countryId]
+    const byCompetition = new Map<
+      string,
+      Array<BoardRow & { teamCount: number }>
+    >()
+    for (const row of rows) {
+      const group = byCompetition.get(row.competitionExternalId) ?? []
+      group.push(row)
+      byCompetition.set(row.competitionExternalId, group)
     }
-    board[key]!.standings.push({
-      position: row.position,
-      teamExternalId: row.teamExternalId,
-      teamName: row.teamName,
-      played: row.played,
-      points: row.points,
-    })
-    boards.set(row.countryId, board)
+    const candidates = [...byCompetition.values()]
+    const best =
+      (pattern
+        ? candidates.find((group) => pattern.test(group[0].competitionName))
+        : undefined) ??
+      candidates.sort((a, b) => b[0].teamCount - a[0].teamCount)[0]
+    if (!best) continue
+    const board =
+      boards.get(countryId) ??
+      ({
+        countryId,
+        countryName: best[0].countryName,
+      } satisfies LandingBoard)
+    const boardKey = gender === "men" || gender === "women" ? gender : "other"
+    board[boardKey] = {
+      name: best[0].competitionName,
+      externalId: best[0].competitionExternalId,
+      standings: best
+        .sort((a, b) => a.position - b.position)
+        .map((row) => ({
+          position: row.position,
+          teamExternalId: row.teamExternalId,
+          teamName: row.teamName,
+          played: row.played,
+          points: row.points,
+        })),
+    }
+    boards.set(countryId, board)
   }
 
   const leaderRows = (await sql`
@@ -163,6 +202,9 @@ export async function getLanding() {
         c.name ilike '%SSL%'
         or c.name ilike '%F-Liiga%'
         or c.name ilike '%L-UPL%'
+        or c.name ilike '%Extraliga%'
+        or c.name ilike '%ELVI%'
+        or c.name ilike '%FBL%'
       )
   `) as Array<LandingLeader>
 

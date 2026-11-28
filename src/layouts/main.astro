@@ -29,15 +29,7 @@ const topPattern: Record<string, RegExp> = {
   CH: /L-UPL/,
 }
 
-function leagueLabel(name: string, gender: string) {
-  const genderLabel = gender === "men" ? "Herrar" : "Damer"
-  if (/SSL/i.test(name)) return `SSL ${genderLabel}`
-  if (/F-Liiga/i.test(name)) return `F-Liiga ${genderLabel}`
-  if (/L-UPL/i.test(name)) return `L-UPL ${genderLabel}`
-  return name
-}
-
-const countryGroups: NavGroup[] = countries.flatMap((country) => {
+const countryNav = countries.map((country) => {
   const inCountry = competitions.filter((row) => row.countryId === country.id)
   const pattern = topPattern[country.id]
   const pick = (gender: "men" | "women") => {
@@ -49,21 +41,11 @@ const countryGroups: NavGroup[] = countries.flatMap((country) => {
   const men = pick("men")
   const women = pick("women")
   const items = [
-    men
-      ? {
-          label: leagueLabel(men.name, "men"),
-          href: `/serie/${men.externalId}`,
-        }
-      : null,
-    women
-      ? {
-          label: leagueLabel(women.name, "women"),
-          href: `/serie/${women.externalId}`,
-        }
-      : null,
+    men ? { label: "Herrar", href: `/serie/${men.externalId}` } : null,
+    women ? { label: "Damer", href: `/serie/${women.externalId}` } : null,
     { label: "Alla serier", href: `/serier?land=${country.id}` },
   ].filter((item): item is { label: string; href: string } => item !== null)
-  return items.length ? [{ label: country.name, items }] : []
+  return { label: country.name, items }
 })
 
 const nav: NavGroup[] = [
@@ -76,7 +58,7 @@ const nav: NavGroup[] = [
       { label: "Om sidan", href: "/om" },
     ],
   },
-  ...countryGroups,
+  { label: "Länder", countries: countryNav },
 ]
 ---
 

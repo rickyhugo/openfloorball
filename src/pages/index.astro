@@ -23,6 +23,7 @@ const data = await getLanding()
 if (!data) return Astro.redirect("/serier")
 
 const countries = await listCountries(data.seasonLabel)
+const countryNames = countries.map((country) => country.name).join(", ")
 const live = await getLiveMatches().catch(() => null)
 const dateFormat = new Intl.DateTimeFormat("sv-SE", {
   day: "numeric",
@@ -60,7 +61,6 @@ const leaderboards = [
   {
     label: "Utvisningsliga",
     rows: data.leaders.penalties.filter((leader) => leader.penaltyMinutes > 0),
-    note: "Schweiz saknar utvisningsminuter i den fria datan.",
     value: (leader: (typeof data.leaders.penalties)[number]) =>
       leader.penaltyMinutes,
   },
@@ -69,12 +69,12 @@ const leaderboards = [
 
 <Layout
   title="Innebandy, tabeller och resultat"
-  description="Tabeller, resultat och live från Sverige, Finland och Schweiz."
+  description={`Tabeller, resultat och live från ${countryNames}.`}
 >
   <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
     <PageHeader
       title="OpenFloorball"
-      description="Tabeller, resultat och live från Sverige, Finland och Schweiz."
+      description={`Tabeller, resultat och live från ${countryNames}.`}
     >
       <a
         href="/live"
@@ -254,7 +254,6 @@ const leaderboards = [
         {leaderboards.map((board) => (
           <LeaderboardCard
             title={board.label}
-            note={"note" in board ? board.note : undefined}
             rows={board.rows.map((leader) => ({
               href: `/spelare/${leader.playerExternalId}`,
               name: leader.playerName,

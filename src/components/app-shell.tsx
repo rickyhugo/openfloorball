@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
   Broadcast,
+  CaretRight,
   GithubLogo,
   House,
   Info,
@@ -8,6 +9,7 @@ import {
   Rows,
   Sun,
 } from "@phosphor-icons/react"
+import { Collapsible } from "radix-ui"
 import { SearchBox } from "@/components/search-box"
 import {
   Sidebar,
@@ -20,6 +22,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
@@ -71,9 +76,15 @@ function isItemActive(location: string, href: string) {
   return path === hrefPath || path.startsWith(hrefPath + "/")
 }
 
-export type NavGroup = {
+export type NavCountry = {
   label: string
   items: { label: string; href: string }[]
+}
+
+export type NavGroup = {
+  label: string
+  items?: { label: string; href: string }[]
+  countries?: NavCountry[]
 }
 
 export function AppShell({
@@ -125,32 +136,80 @@ export function AppShell({
             {nav.map((group) => (
               <SidebarGroup key={group.label}>
                 <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-                <SidebarMenu>
-                  {group.items.map((item) => {
-                    const Icon = SECTION_ICONS[item.label]
-                    const liveHere =
-                      item.href === "/live" && (liveCount ?? 0) > 0
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isItemActive(location, item.href)}
+                {group.countries?.length ? (
+                  <SidebarMenu>
+                    {group.countries.map((country) => {
+                      const openByDefault = country.items.some((item) =>
+                        isItemActive(location, item.href)
+                      )
+                      return (
+                        <Collapsible.Root
+                          key={country.label}
+                          defaultOpen={openByDefault}
+                          className="group/country"
                         >
-                          <a href={item.href}>
-                            {Icon ? <Icon size={16} /> : null}
-                            <span className="flex-1">{item.label}</span>
-                            {liveHere ? (
-                              <span className="flex items-center gap-1 text-[0.65rem] font-medium text-emerald-600">
-                                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-                                {liveCount}
-                              </span>
-                            ) : null}
-                          </a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarMenu>
+                          <SidebarMenuItem>
+                            <Collapsible.Trigger asChild>
+                              <SidebarMenuButton className="w-full">
+                                <span className="flex-1 text-left">
+                                  {country.label}
+                                </span>
+                                <CaretRight
+                                  size={14}
+                                  className="transition-transform group-data-[state=open]/country:rotate-90"
+                                />
+                              </SidebarMenuButton>
+                            </Collapsible.Trigger>
+                            <Collapsible.Content>
+                              <SidebarMenuSub>
+                                {country.items.map((item) => (
+                                  <SidebarMenuSubItem key={item.href}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={isItemActive(
+                                        location,
+                                        item.href
+                                      )}
+                                    >
+                                      <a href={item.href}>{item.label}</a>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </Collapsible.Content>
+                          </SidebarMenuItem>
+                        </Collapsible.Root>
+                      )
+                    })}
+                  </SidebarMenu>
+                ) : (
+                  <SidebarMenu>
+                    {(group.items ?? []).map((item) => {
+                      const Icon = SECTION_ICONS[item.label]
+                      const liveHere =
+                        item.href === "/live" && (liveCount ?? 0) > 0
+                      return (
+                        <SidebarMenuItem key={item.href}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isItemActive(location, item.href)}
+                          >
+                            <a href={item.href}>
+                              {Icon ? <Icon size={16} /> : null}
+                              <span className="flex-1">{item.label}</span>
+                              {liveHere ? (
+                                <span className="flex items-center gap-1 text-[0.65rem] font-medium text-emerald-600">
+                                  <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                  {liveCount}
+                                </span>
+                              ) : null}
+                            </a>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      )
+                    })}
+                  </SidebarMenu>
+                )}
               </SidebarGroup>
             ))}
           </SidebarContent>
