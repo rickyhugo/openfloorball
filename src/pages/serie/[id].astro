@@ -80,7 +80,6 @@ const liveSource =
 const leaderboards = [
   {
     label: "Skytteliga",
-    unit: "Mål",
     rows: [...data.leaders]
       .sort((a, b) => b.goals - a.goals || b.points - a.points)
       .slice(0, 10),
@@ -88,7 +87,6 @@ const leaderboards = [
   },
   {
     label: "Assistliga",
-    unit: "Ass",
     rows: [...data.leaders]
       .sort((a, b) => b.assists - a.assists || b.points - a.points)
       .slice(0, 10),
@@ -96,7 +94,6 @@ const leaderboards = [
   },
   {
     label: "Poängliga",
-    unit: "P",
     rows: [...data.leaders]
       .sort((a, b) => b.points - a.points || b.goals - a.goals)
       .slice(0, 10),
@@ -104,7 +101,6 @@ const leaderboards = [
   },
   {
     label: "Utvisningsliga",
-    unit: "Utv",
     empty: "Utvisningsminuter saknas i den fria datan för denna serie.",
     rows: [...data.leaders]
       .filter((row) => row.penaltyMinutes > 0)
@@ -219,7 +215,6 @@ const sourceUrl =
           {leaderboards.map((board) => (
             <LeaderboardCard
               title={board.label}
-              unit={board.unit}
               empty={"empty" in board ? board.empty : undefined}
               rows={board.rows.map((row) => ({
                 href: `/spelare/${row.playerExternalId}`,

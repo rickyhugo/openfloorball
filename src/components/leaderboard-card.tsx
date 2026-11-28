@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardAction, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 export type LeaderboardRow = {
   href: string
@@ -11,13 +10,11 @@ export type LeaderboardRow = {
 
 export function LeaderboardCard({
   title,
-  unit,
   rows,
   note,
   empty,
 }: {
   title: string
-  unit: string
   rows: LeaderboardRow[]
   note?: string
   empty?: string
@@ -28,9 +25,6 @@ export function LeaderboardCard({
         <h3 className="font-heading text-sm font-medium group-data-[size=sm]/card:text-sm">
           {title}
         </h3>
-        <CardAction>
-          <Badge variant="outline">{unit}</Badge>
-        </CardAction>
       </CardHeader>
       <CardContent className="px-0">
         {rows.length > 0 ? (

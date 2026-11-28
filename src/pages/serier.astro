@@ -226,7 +226,7 @@ const genders = [
                             {levelOf(item.name).label}
                           </span>
                         </span>
-                        {gender ? (
+                        {gender && !/Herrar|Damer/i.test(item.name) ? (
                           <Badge variant="outline" className="shrink-0">
                             {gender}
                           </Badge>

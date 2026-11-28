@@ -44,25 +44,21 @@ const genders = [
 const leaderboards = [
   {
     label: "Skytteliga",
-    unit: "Mål",
     rows: data.leaders.goals,
     value: (leader: (typeof data.leaders.goals)[number]) => leader.goals,
   },
   {
     label: "Assistliga",
-    unit: "Ass",
     rows: data.leaders.assists,
     value: (leader: (typeof data.leaders.assists)[number]) => leader.assists,
   },
   {
     label: "Poängliga",
-    unit: "P",
     rows: data.leaders.points,
     value: (leader: (typeof data.leaders.points)[number]) => leader.points,
   },
   {
     label: "Utvisningsliga",
-    unit: "Utv",
     rows: data.leaders.penalties.filter((leader) => leader.penaltyMinutes > 0),
     note: "Schweiz saknar utvisningsminuter i den fria datan.",
     value: (leader: (typeof data.leaders.penalties)[number]) =>
@@ -258,7 +254,6 @@ const leaderboards = [
         {leaderboards.map((board) => (
           <LeaderboardCard
             title={board.label}
-            unit={board.unit}
             note={"note" in board ? board.note : undefined}
             rows={board.rows.map((leader) => ({
               href: `/spelare/${leader.playerExternalId}`,
