@@ -11,6 +11,7 @@ import {
 } from "./ibis-live"
 import { getFinlandLiveMatch, getFinlandLiveMatches } from "./finland-live"
 import { getSwissLiveMatch, getSwissLiveMatches } from "./swiss-live"
+import { getFcLiveMatch, getFcLiveMatches } from "./fc-live"
 
 const RANK: Record<LiveStatus, number> = {
   live: 0,
@@ -26,6 +27,10 @@ export async function getLiveMatches(): Promise<LiveMatches> {
     { name: "se", promise: getSwedishMatches() },
     { name: "fi", promise: getFinlandLiveMatches() },
     { name: "ch", promise: getSwissLiveMatches() },
+    { name: "cz", promise: getFcLiveMatches("cz") },
+    { name: "sk", promise: getFcLiveMatches("sk") },
+    { name: "lv", promise: getFcLiveMatches("lv") },
+    { name: "de", promise: getFcLiveMatches("de") },
   ]
   const results = await Promise.allSettled(
     sources.map((source) => source.promise)
@@ -65,5 +70,6 @@ export async function getLiveMatch(
 ): Promise<LiveMatch> {
   if (source === "se") return getSwedishMatch(Number(id))
   if (source === "fi") return getFinlandLiveMatch(id)
-  return getSwissLiveMatch(id)
+  if (source === "ch") return getSwissLiveMatch(id)
+  return getFcLiveMatch(source, id)
 }

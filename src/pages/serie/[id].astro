@@ -244,15 +244,26 @@ const sourceUrl =
                 <TableHead className="text-right tracking-wider uppercase">
                   M
                 </TableHead>
-                <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
-                  Skott
-                </TableHead>
-                <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
-                  IM
-                </TableHead>
-                <TableHead className="text-right tracking-wider uppercase">
-                  Räddning %
-                </TableHead>
+                {data.goalies.some((row) => row.shotsAgainst !== null) ? (
+                  <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
+                    Skott
+                  </TableHead>
+                ) : null}
+                {data.goalies.some((row) => row.goalsAgainst !== null) ? (
+                  <TableHead className="hidden text-right tracking-wider uppercase sm:table-cell">
+                    IM
+                  </TableHead>
+                ) : null}
+                {data.goalies.some((row) => row.cleanSheets !== null) ? (
+                  <TableHead className="text-right tracking-wider uppercase">
+                    Nollspel
+                  </TableHead>
+                ) : null}
+                {data.goalies.some((row) => row.savePercentage !== null) ? (
+                  <TableHead className="text-right tracking-wider uppercase">
+                    Räddning %
+                  </TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -276,14 +287,21 @@ const sourceUrl =
                     {row.matches}
                   </TableCell>
                   <TableCell className="hidden py-2.5 text-right tabular-nums sm:table-cell">
-                    {row.shotsAgainst}
+                    {row.shotsAgainst ?? "-"}
                   </TableCell>
                   <TableCell className="hidden py-2.5 text-right tabular-nums sm:table-cell">
-                    {row.goalsAgainst}
+                    {row.goalsAgainst ?? "-"}
                   </TableCell>
-                  <TableCell className="py-2.5 text-right font-semibold tabular-nums">
-                    {row.savePercentage.toFixed(2)}
-                  </TableCell>
+                  {row.cleanSheets !== null || row.savePercentage !== null ? (
+                    <TableCell className="py-2.5 text-right tabular-nums">
+                      {row.cleanSheets ?? "-"}
+                    </TableCell>
+                  ) : null}
+                  {row.savePercentage !== null ? (
+                    <TableCell className="py-2.5 text-right font-semibold tabular-nums">
+                      {row.savePercentage.toFixed(2)}
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>

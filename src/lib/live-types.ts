@@ -1,9 +1,13 @@
-export type LiveSource = "se" | "fi" | "ch"
+export type LiveSource = "se" | "fi" | "ch" | "cz" | "sk" | "lv" | "de"
 
 export const LIVE_SOURCE_COUNTRY: Record<LiveSource, string> = {
   se: "Sverige",
   fi: "Finland",
   ch: "Schweiz",
+  cz: "Tjeckien",
+  sk: "Slovakien",
+  lv: "Lettland",
+  de: "Tyskland",
 }
 
 export type LiveStatus = "live" | "finished" | "upcoming" | "cancelled"

@@ -310,6 +310,9 @@ export const playerCompetitionStat = pgTable(
     assists: integer("assists").notNull(),
     points: integer("points").notNull(),
     penaltyMinutes: integer("penalty_minutes").notNull().default(0),
+    plusMinus: integer("plus_minus"),
+    shots: integer("shots"),
+    blocks: integer("blocks"),
     powerPlayGoals: integer("power_play_goals").notNull().default(0),
     powerPlayAssists: integer("power_play_assists").notNull().default(0),
     boxPlayGoals: integer("box_play_goals").notNull().default(0),
@@ -341,9 +344,10 @@ export const goalieCompetitionStat = pgTable(
       .notNull()
       .references(() => player.id),
     matches: integer("matches").notNull(),
-    shotsAgainst: integer("shots_against").notNull(),
-    goalsAgainst: integer("goals_against").notNull(),
-    savePercentage: real("save_percentage").notNull(),
+    shotsAgainst: integer("shots_against"),
+    goalsAgainst: integer("goals_against"),
+    savePercentage: real("save_percentage"),
+    cleanSheets: integer("clean_sheets"),
     fetchedAt: timestamp("fetched_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

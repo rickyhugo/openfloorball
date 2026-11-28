@@ -144,6 +144,7 @@ export async function getCompetition(externalId: string) {
       shotsAgainst: goalieCompetitionStat.shotsAgainst,
       goalsAgainst: goalieCompetitionStat.goalsAgainst,
       savePercentage: goalieCompetitionStat.savePercentage,
+      cleanSheets: goalieCompetitionStat.cleanSheets,
     })
     .from(goalieCompetitionStat)
     .innerJoin(player, eq(player.id, goalieCompetitionStat.playerId))
@@ -154,6 +155,7 @@ export async function getCompetition(externalId: string) {
     .innerJoin(club, eq(club.id, teamSeason.clubId))
     .where(eq(goalieCompetitionStat.seasonId, record.seasonId))
     .orderBy(
+      desc(goalieCompetitionStat.cleanSheets),
       desc(goalieCompetitionStat.savePercentage),
       desc(goalieCompetitionStat.matches)
     )

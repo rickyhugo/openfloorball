@@ -4,6 +4,7 @@ import {
   competition,
   country,
   game,
+  goalieCompetitionStat,
   player,
   playerCompetitionStat,
   rosterEntry,
@@ -42,6 +43,21 @@ export type ExternalPlayer = {
   assists: number
   points: number
   penaltyMinutes: number
+  plusMinus?: number | null
+  shots?: number | null
+  blocks?: number | null
+}
+
+export type ExternalGoalie = {
+  externalId: string
+  name: string
+  teamExternalId: string
+  imageUrl?: string | null
+  matches: number
+  shotsAgainst?: number | null
+  goalsAgainst?: number | null
+  savePercentage?: number | null
+  cleanSheets?: number | null
 }
 
 export type ExternalStanding = {
@@ -71,6 +87,7 @@ export type ExternalLeague = {
   games: ExternalGame[]
   standings: ExternalStanding[]
   players?: ExternalPlayer[]
+  goalies?: ExternalGoalie[]
 }
 
 function slugify(value: string) {
@@ -286,6 +303,9 @@ export async function loadExternalLeague(league: ExternalLeague) {
         assists: entry.assists,
         points: entry.points,
         penaltyMinutes: entry.penaltyMinutes,
+        plusMinus: entry.plusMinus ?? null,
+        shots: entry.shots ?? null,
+        blocks: entry.blocks ?? null,
       })
       .onConflictDoUpdate({
         target: [
@@ -299,6 +319,64 @@ export async function loadExternalLeague(league: ExternalLeague) {
           assists: entry.assists,
           points: entry.points,
           penaltyMinutes: entry.penaltyMinutes,
+          plusMinus: entry.plusMinus ?? null,
+          shots: entry.shots ?? null,
+          blocks: entry.blocks ?? null,
+          fetchedAt: new Date(),
+        },
+      })
+  }
+
+  for (const entry of league.goalies ?? []) {
+    const teamSeasonId = teamSeasonIds.get(entry.teamExternalId)
+    if (!teamSeasonId) continue
+    const [playerRow] = await db
+      .insert(player)
+      .values({
+        source: league.source,
+        externalId: entry.externalId,
+        name: entry.name,
+        imageUrl: entry.imageUrl ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [player.source, player.externalId],
+        set: { name: entry.name, imageUrl: entry.imageUrl ?? null },
+      })
+      .returning({ id: player.id })
+
+    await db
+      .insert(rosterEntry)
+      .values({
+        seasonId: seasonRow.id,
+        teamSeasonId,
+        playerId: playerRow.id,
+      })
+      .onConflictDoNothing()
+
+    await db
+      .insert(goalieCompetitionStat)
+      .values({
+        seasonId: seasonRow.id,
+        teamSeasonId,
+        playerId: playerRow.id,
+        matches: entry.matches,
+        shotsAgainst: entry.shotsAgainst ?? null,
+        goalsAgainst: entry.goalsAgainst ?? null,
+        savePercentage: entry.savePercentage ?? null,
+        cleanSheets: entry.cleanSheets ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [
+          goalieCompetitionStat.seasonId,
+          goalieCompetitionStat.teamSeasonId,
+          goalieCompetitionStat.playerId,
+        ],
+        set: {
+          matches: entry.matches,
+          shotsAgainst: entry.shotsAgainst ?? null,
+          goalsAgainst: entry.goalsAgainst ?? null,
+          savePercentage: entry.savePercentage ?? null,
+          cleanSheets: entry.cleanSheets ?? null,
           fetchedAt: new Date(),
         },
       })
