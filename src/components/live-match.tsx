@@ -94,7 +94,7 @@ export function LiveMatch({
           )}
           {periodText(match) ? (
             <span className="text-muted-foreground tabular-nums">
-              · {periodText(match)}
+              {periodText(match)}
             </span>
           ) : null}
         </div>
