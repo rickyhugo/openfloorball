@@ -142,25 +142,27 @@ export function MatchTimeline({ match }: { match: LiveMatch }) {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="font-heading text-xl">Händelser</CardTitle>
-          <div className="flex flex-wrap gap-1">
-            {filters.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setFilter(item.key)}
-                aria-pressed={filter === item.key}
-                className={cn(
-                  "border px-2 py-1 text-xs transition-colors",
-                  filter === item.key
-                    ? "border-foreground bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {item.label}
-                <span className="ml-1 opacity-60">{counts[item.key]}</span>
-              </button>
-            ))}
-          </div>
+          {match.status !== "upcoming" && events.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {filters.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setFilter(item.key)}
+                  aria-pressed={filter === item.key}
+                  className={cn(
+                    "border px-2 py-1 text-xs transition-colors",
+                    filter === item.key
+                      ? "border-foreground bg-foreground text-background"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  {item.label}
+                  <span className="ml-1 opacity-60">{counts[item.key]}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent>
