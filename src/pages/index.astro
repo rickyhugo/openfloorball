@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/page-header"
 import { LeaderboardCard } from "@/components/leaderboard-card"
 import { ScoreTicker } from "@/components/score-ticker"
 import { getLiveMatches } from "@/lib/live"
+import { shortLeagueName } from "@/lib/league-name"
 
 export const prerender = false
 
@@ -155,7 +156,7 @@ const leaderboards = [
                           class="min-w-0 truncate text-right text-xs text-muted-foreground hover:text-foreground hover:underline"
                           title={competition.name}
                         >
-                          {competition.name}
+                          {shortLeagueName(competition.name)}
                         </a>
                       </div>
                       <ol class="mt-2 divide-y border-y">
@@ -262,7 +263,7 @@ const leaderboards = [
             rows={board.rows.map((leader) => ({
               href: `/spelare/${leader.playerExternalId}`,
               name: leader.playerName,
-              subtitle: `${leader.countryName} · ${leader.competitionName}`,
+              subtitle: `${leader.countryName} · ${shortLeagueName(leader.competitionName)}`,
               value: board.value(leader),
             }))}
           />

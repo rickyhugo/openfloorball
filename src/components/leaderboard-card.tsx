@@ -1,11 +1,6 @@
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardHeader } from "@/components/ui/card"
 
 export type LeaderboardRow = {
   href: string
@@ -30,22 +25,31 @@ export function LeaderboardCard({
   return (
     <Card size="sm" className="min-w-0">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <h3 className="font-heading text-sm font-medium group-data-[size=sm]/card:text-sm">
+          {title}
+        </h3>
         <CardAction>
           <Badge variant="outline">{unit}</Badge>
         </CardAction>
       </CardHeader>
       <CardContent className="px-0">
         {rows.length > 0 ? (
-          <ul className="divide-y">
+          <ul>
             {rows.map((row, index) => (
               <li key={`${row.href}-${index}`}>
                 <a
                   href={row.href}
-                  className="flex min-w-0 items-baseline justify-between gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+                  className="flex min-w-0 items-baseline justify-between gap-3 px-4 py-2 text-sm transition-colors hover:bg-muted/40"
                 >
                   <span className="flex min-w-0 items-baseline gap-2">
-                    <span className="w-6 shrink-0 text-xs text-muted-foreground tabular-nums">
+                    <span
+                      className={cn(
+                        "w-5 shrink-0 text-xs tabular-nums",
+                        index < 3
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
                       {index + 1}
                     </span>
                     <span className="min-w-0">
