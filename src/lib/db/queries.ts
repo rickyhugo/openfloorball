@@ -299,7 +299,11 @@ export async function getTeam(
     )
     .orderBy(asc(game.startsAt))
 
-  const rosterWithPositions = await fillIbisPositions(record.source, roster)
+  const rosterWithPositions = await fillIbisPositions(
+    record.source,
+    roster,
+    record.teamExternalId
+  )
 
   return {
     ...record,
