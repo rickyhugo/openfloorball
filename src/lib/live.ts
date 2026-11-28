@@ -60,8 +60,10 @@ export async function getLiveMatches(): Promise<LiveMatches> {
   return { date, matches }
 }
 
+const LIVE_SOURCES: LiveSource[] = ["se", "fi", "ch", "cz", "sk", "lv", "de"]
+
 export function isLiveSource(value: string): value is LiveSource {
-  return value === "se" || value === "fi" || value === "ch"
+  return LIVE_SOURCES.includes(value as LiveSource)
 }
 
 export async function getLiveMatch(

@@ -46,6 +46,7 @@ export async function getCompetition(externalId: string) {
       gender: competition.gender,
       logoUrl: competition.logoUrl,
       source: competition.source,
+      countryId: competition.countryId,
       seasonId: season.id,
       seasonLabel: season.label,
     })
@@ -179,6 +180,7 @@ export async function getTeam(
       competitionName: competition.name,
       categoryName: competition.categoryName,
       source: competition.source,
+      countryId: competition.countryId,
       seasonId: season.id,
       seasonLabel: season.label,
     })

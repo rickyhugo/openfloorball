@@ -76,7 +76,9 @@ const liveSource =
     ? "fi"
     : data.source === "swissunihockey"
       ? "ch"
-      : "se"
+      : data.source === "fc"
+        ? data.countryId.toLowerCase()
+        : "se"
 const leaderboards = [
   {
     label: "Skytteliga",
@@ -119,7 +121,9 @@ const sourceUrl =
     ? "fliiga.com"
     : data.source === "swissunihockey"
       ? "myapp.swissunihockey.ch"
-      : "stats.innebandy.se"
+      : data.source === "fc"
+        ? "stats.floorballconnect.com"
+        : "stats.innebandy.se"
 ---
 
 <Layout
