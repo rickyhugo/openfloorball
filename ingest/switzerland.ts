@@ -2,12 +2,21 @@ import { chromium } from "playwright-core"
 import {
   loadExternalLeague,
   type ExternalGame,
+  type ExternalGoalie,
   type ExternalPlayer,
   type ExternalStanding,
   type ExternalTeam,
 } from "./external/load"
 
 const BASE = "https://myapp.swissunihockey.ch"
+
+const API_HEADERS = {
+  "user-agent":
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+  referer: "https://myapp.swissunihockey.ch/",
+  origin: "https://myapp.swissunihockey.ch",
+  accept: "application/json",
+}
 
 function normalize(value: string) {
   return value
@@ -190,12 +199,14 @@ const leagues = [
     gender: "men" as const,
     externalId: "swiss-lupl-men",
     name: "L-UPL Herrar",
+    fcCategory: "ch-26-27-regular-season",
   },
   {
     id: 9534,
     gender: "women" as const,
     externalId: "swiss-lupl-women",
     name: "L-UPL Damer",
+    fcCategory: "chw-26-27-regular-season",
   },
 ]
 
@@ -206,29 +217,124 @@ type SwissStatRow = {
   ValueColumns: Array<{ Value: string }>
 }
 
+// The myapp Pen column is 0 for every player, so real penalty minutes come
+// from the FloorballConnect league players tables. Match by name, using the
+// team only to break ties when the same name appears on two teams.
+type FcPlayerRow = { name: string; team: string; pim: number }
+
+async function fetchFloorballConnectPims(
+  category: string
+): Promise<Map<string, FcPlayerRow[]>> {
+  const response = await fetch(
+    `https://stats.floorballconnect.com/category/${category}-players.html`,
+    { headers: { "user-agent": API_HEADERS["user-agent"] } }
+  )
+  if (!response.ok)
+    throw new Error(`floorballconnect ${category} -> ${response.status}`)
+  const html = await response.text()
+  const pims = new Map<string, FcPlayerRow[]>()
+  for (const match of html.matchAll(
+    /data-player-name="([^"]*)"\s*data-team-name="([^"]*)"([\s\S]*?)<\/tr>/g
+  )) {
+    const cells = [...match[3].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(
+      (cell) => cell[1].replace(/<[^>]*>/g, "").trim()
+    )
+    const pim = Number(cells[cells.length - 1])
+    if (!Number.isFinite(pim)) continue
+    const key = normalize(match[1])
+    const row = { name: match[1], team: match[2], pim }
+    const existing = pims.get(key)
+    if (existing) existing.push(row)
+    else pims.set(key, [row])
+  }
+  return pims
+}
+
+function fcPenaltyMinutes(
+  pims: Map<string, FcPlayerRow[]>,
+  name: string,
+  team: string
+): number | null {
+  const candidates = pims.get(normalize(name))
+  if (!candidates) return null
+  const onTeam = candidates.filter(
+    (row) => normalize(row.team) === normalize(team)
+  )
+  const usable = onTeam.length > 0 ? onTeam : candidates
+  return usable.length === 1 ? usable[0].pim : null
+}
+
+type SwissGoalieRow = {
+  ItemID: number
+  Name: string
+  Details: string
+  ValueColumns: Array<{ Value: string }>
+}
+
+async function fetchGoalies(
+  leagueId: number,
+  teamsByName: Map<string, string>
+): Promise<ExternalGoalie[]> {
+  const response = await fetch(
+    "https://swissunihockey-api.azurewebsites.net/api/statisticstableapi/initgoalkeepercleansheetstatisticsforleague" +
+      `?LeagueID=${leagueId}`,
+    { headers: API_HEADERS }
+  )
+  if (!response.ok)
+    throw new Error(`goalie stats ${leagueId} -> ${response.status}`)
+  const table = (await response.json()) as { Rows: SwissGoalieRow[] }
+  let unknownTeams = 0
+  const goalies = table.Rows.flatMap((row) => {
+    const teamExternalId = teamsByName.get(normalize(row.Details))
+    if (!teamExternalId) {
+      unknownTeams++
+      return []
+    }
+    return [
+      {
+        externalId: String(row.ItemID),
+        name: row.Name,
+        teamExternalId,
+        imageUrl: null,
+        matches: number(row.ValueColumns[0]?.Value ?? "0"),
+        shotsAgainst: null,
+        goalsAgainst: null,
+        savePercentage: null,
+        cleanSheets: number(row.ValueColumns[1]?.Value ?? "0"),
+      },
+    ]
+  })
+  if (unknownTeams) {
+    console.warn(
+      `goalie stats ${leagueId}: ${unknownTeams} rows without a known team`
+    )
+  }
+  return goalies
+}
+
 async function fetchPlayers(
   leagueId: number,
+  fcCategory: string,
   teamsByName: Map<string, string>
 ): Promise<ExternalPlayer[]> {
   const response = await fetch(
     "https://swissunihockey-api.azurewebsites.net/api/statisticstableapi/getplayerstatisticsforleague" +
       `?LeagueID=${leagueId}&PageID=0&PageSize=1000&SelectedColumnType=11`,
-    {
-      headers: {
-        "user-agent":
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
-        referer: "https://myapp.swissunihockey.ch/",
-        origin: "https://myapp.swissunihockey.ch",
-        accept: "application/json",
-      },
-    }
+    { headers: API_HEADERS }
   )
   if (!response.ok)
     throw new Error(`player stats ${leagueId} -> ${response.status}`)
   const rows = (await response.json()) as SwissStatRow[]
-  return rows.flatMap((row) => {
+  const pims = await fetchFloorballConnectPims(fcCategory).catch((error) => {
+    console.warn(`floorballconnect ${fcCategory} failed`, String(error))
+    return new Map<string, FcPlayerRow[]>()
+  })
+  let matched = 0
+  const players = rows.flatMap((row) => {
     const teamExternalId = teamsByName.get(normalize(row.Details))
     if (!teamExternalId || row.ValueColumns.length < 4) return []
+    const pim = fcPenaltyMinutes(pims, row.Name, row.Details)
+    if (pim !== null) matched++
     return [
       {
         externalId: String(row.ItemID),
@@ -239,10 +345,14 @@ async function fetchPlayers(
         goals: number(row.ValueColumns[1].Value),
         assists: number(row.ValueColumns[2].Value),
         points: number(row.ValueColumns[3].Value),
-        penaltyMinutes: number(row.ValueColumns[4]?.Value ?? "0"),
+        penaltyMinutes: pim ?? number(row.ValueColumns[4]?.Value ?? "0"),
       },
     ]
   })
+  console.log(
+    `PIM ${fcCategory}: ${matched}/${rows.length} myapp rows matched from ${pims.size} FloorballConnect names`
+  )
+  return players
 }
 
 const browser = await chromium.launch({
@@ -349,8 +459,16 @@ for (const league of leagues) {
     }
   }
 
-  const players = await fetchPlayers(leagueId, teamsByName).catch((error) => {
+  const players = await fetchPlayers(
+    leagueId,
+    league.fcCategory,
+    teamsByName
+  ).catch((error) => {
     console.warn(`player stats ${leagueId} failed`, String(error))
+    return []
+  })
+  const goalies = await fetchGoalies(leagueId, teamsByName).catch((error) => {
+    console.warn(`goalie stats ${leagueId} failed`, String(error))
     return []
   })
 
@@ -384,8 +502,9 @@ for (const league of leagues) {
     games: [...gameMap.values()],
     standings,
     players,
+    goalies,
   })
-  console.log(league.name, result)
+  console.log(`${league.name}: ${goalies.length} goalies`, result)
   await page.close()
   await new Promise((resolve) => setTimeout(resolve, 1000))
 }

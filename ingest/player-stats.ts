@@ -173,7 +173,57 @@ async function finlandPlayers(gender: "men" | "women"): Promise<PlayerStat[]> {
   }))
 }
 
-async function swissPlayers(leagueId: number): Promise<PlayerStat[]> {
+// The myapp Pen column is 0 for every player, so overlay real penalty minutes
+// from the FloorballConnect league players tables. Match by name, using the
+// team only to break ties when the same name appears on two teams.
+type FcPlayerRow = { name: string; team: string; pim: number }
+
+async function fetchFloorballConnectPims(
+  category: string
+): Promise<Map<string, FcPlayerRow[]>> {
+  const response = await fetch(
+    `https://stats.floorballconnect.com/category/${category}-players.html`,
+    { headers: { "user-agent": "Mozilla/5.0" } }
+  )
+  if (!response.ok)
+    throw new Error(`floorballconnect ${category} -> ${response.status}`)
+  const html = await response.text()
+  const pims = new Map<string, FcPlayerRow[]>()
+  for (const match of html.matchAll(
+    /data-player-name="([^"]*)"\s*data-team-name="([^"]*)"([\s\S]*?)<\/tr>/g
+  )) {
+    const cells = [...match[3].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(
+      (cell) => cell[1].replace(/<[^>]*>/g, "").trim()
+    )
+    const pim = Number(cells[cells.length - 1])
+    if (!Number.isFinite(pim)) continue
+    const key = normalize(match[1])
+    const row = { name: match[1], team: match[2], pim }
+    const existing = pims.get(key)
+    if (existing) existing.push(row)
+    else pims.set(key, [row])
+  }
+  return pims
+}
+
+function fcPenaltyMinutes(
+  pims: Map<string, FcPlayerRow[]>,
+  name: string,
+  team: string
+): number | null {
+  const candidates = pims.get(normalize(name))
+  if (!candidates) return null
+  const onTeam = candidates.filter(
+    (row) => normalize(row.team) === normalize(team)
+  )
+  const usable = onTeam.length > 0 ? onTeam : candidates
+  return usable.length === 1 ? usable[0].pim : null
+}
+
+async function swissPlayers(
+  leagueId: number,
+  fcCategory: string
+): Promise<PlayerStat[]> {
   const response = await fetch(
     "https://swissunihockey-api.azurewebsites.net/api/statisticstableapi/getplayerstatisticsforleague" +
       `?LeagueID=${leagueId}&PageID=0&PageSize=1000&SelectedColumnType=11`,
@@ -194,8 +244,15 @@ async function swissPlayers(leagueId: number): Promise<PlayerStat[]> {
     Details: string
     ValueColumns: Array<{ Value: string }>
   }>
-  return rows.flatMap((row) => {
+  const pims = await fetchFloorballConnectPims(fcCategory).catch((error) => {
+    console.warn(`floorballconnect ${fcCategory} failed`, String(error))
+    return new Map<string, FcPlayerRow[]>()
+  })
+  let matched = 0
+  const players = rows.flatMap((row) => {
     if (row.ValueColumns.length < 4) return []
+    const pim = fcPenaltyMinutes(pims, row.Name, row.Details)
+    if (pim !== null) matched++
     return [
       {
         externalId: String(row.ItemID),
@@ -206,16 +263,20 @@ async function swissPlayers(leagueId: number): Promise<PlayerStat[]> {
         goals: Number(row.ValueColumns[1].Value),
         assists: Number(row.ValueColumns[2].Value),
         points: Number(row.ValueColumns[3].Value),
-        penaltyMinutes: Number(row.ValueColumns[4]?.Value ?? 0),
+        penaltyMinutes: pim ?? Number(row.ValueColumns[4]?.Value ?? 0),
       },
     ]
   })
+  console.log(
+    `PIM ${fcCategory}: ${matched}/${rows.length} myapp rows matched from ${pims.size} FloorballConnect names`
+  )
+  return players
 }
 
 const fiMen = await finlandPlayers("men")
 const fiWomen = await finlandPlayers("women")
-const chMen = await swissPlayers(9380)
-const chWomen = await swissPlayers(9534)
+const chMen = await swissPlayers(9380, "ch-26-27-regular-season")
+const chWomen = await swissPlayers(9534, "chw-26-27-regular-season")
 
 await loadPlayers("fliiga", "fliiga-men", fiMen)
 await loadPlayers("fliiga", "fliiga-women", fiWomen)
